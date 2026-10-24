@@ -115,8 +115,9 @@ export function Omnibox({
   });
   const start = useDropdownStart(dropdown && !edited && !scope, tabId, profileId);
   const idle = !!opensTab && !scope && !typed.trim();
-  const openTabs = useOpenTabsStart(idle, windowId, profileId);
-  const predicted = usePredictedStart(idle, profileId, openTabs);
+  const idleSuggestions = useBrowser((s) => s.settings.commandBarSuggestions);
+  const openTabs = useOpenTabsStart(idle && idleSuggestions, windowId, profileId);
+  const predicted = usePredictedStart(idle && idleSuggestions, profileId, openTabs);
   const idleItems = useMemo(() => (predicted.length ? [...predicted, ...openTabs] : openTabs), [predicted, openTabs]);
   const items = dropdown && !edited && !scope ? start : idle ? idleItems : suggested;
   const inline = useInlineCompletion(input, typed, suppressCompletion || scope ? "" : completion);

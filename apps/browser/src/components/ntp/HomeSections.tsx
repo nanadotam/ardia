@@ -1,6 +1,8 @@
 import { userFullName } from "@ardia/shell";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Easing, Pressable, Text, View } from "react-native";
+import { GREETING_FONTS } from "../../lib/ntpArtwork";
+import { useNtpBackdrop } from "./Backdrop";
 import { greetingFor, recentSites, suggestedForNow, type SiteSuggestion } from "../../lib/ntpSuggestions";
 import { useTheme } from "../../lib/theme";
 import { useBrowser } from "../../store/browser";
@@ -14,6 +16,8 @@ const NO_HISTORY: never[] = [];
 export function Greeting({ left, top, width }: { left: number; top: number; width: number }) {
   const theme = useTheme();
   const custom = useBrowser((s) => s.settings.greetingName);
+  const font = useBrowser((s) => GREETING_FONTS[s.settings.greetingFont]);
+  const onArt = !!useNtpBackdrop();
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60_000);
@@ -37,14 +41,25 @@ export function Greeting({ left, top, width }: { left: number; top: number; widt
         transform: [{ translateY: rise.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }],
       }}
     >
-      <Text style={{ fontSize: 30, fontWeight: "700", letterSpacing: -0.4, color: theme.textPrimary }}>{greetingFor(now, name)}</Text>
+      <Text
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        style={[
+          font ? { fontFamily: font, fontSize: 46, letterSpacing: -0.6 } : { fontSize: 30, fontWeight: "700", letterSpacing: -0.4 },
+          { color: onArt ? "#FFFFFF" : theme.textPrimary },
+          onArt ? { textShadowColor: "rgba(0,0,0,0.45)", textShadowRadius: 14, textShadowOffset: { width: 0, height: 2 } } : null,
+        ]}
+      >
+        {greetingFor(now, name)}
+      </Text>
     </Animated.View>
   );
 }
 
 export function HomeSections({ tabId, left, top, width }: { tabId: string; left: number; top: number; width: number }) {
   const profileId = useBrowser((s) => s.tabs[tabId]?.profileId ?? "");
-  const history = useBrowser((s) => s.history[profileId] ?? NO_HISTORY);
+  const enabled = useBrowser((s) => s.settings.ntpSuggestions);
+  const history = useBrowser((s) => (enabled ? (s.history[profileId] ?? NO_HISTORY) : NO_HISTORY));
   const sections = useMemo(() => {
     const now = new Date();
     const suggested = suggestedForNow(history, now);
@@ -76,11 +91,17 @@ export function HomeSections({ tabId, left, top, width }: { tabId: string; left:
 
 function SectionTitle({ title }: { title: string }) {
   const theme = useTheme();
-  return <Text style={{ fontSize: 13, fontWeight: "700", color: theme.textSecondary, marginLeft: 2 }}>{title}</Text>;
+  const onArt = !!useNtpBackdrop();
+  return (
+    <Text style={[{ fontSize: 13, fontWeight: "700", color: onArt ? "rgba(255,255,255,0.92)" : theme.textSecondary, marginLeft: 2 }, onArt ? { textShadowColor: "rgba(0,0,0,0.5)", textShadowRadius: 8 } : null]}>
+      {title}
+    </Text>
+  );
 }
 
 const SiteTile = memo(function SiteTile({ site, profileId, index, onOpen }: { site: SiteSuggestion; profileId: string; index: number; onOpen: (url: string) => void }) {
   const theme = useTheme();
+  const onArt = !!useNtpBackdrop();
   const { hovered, hoverProps } = useHover();
   const enter = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -96,12 +117,28 @@ const SiteTile = memo(function SiteTile({ site, profileId, index, onOpen }: { si
             borderRadius: 14,
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: hovered ? (theme.dark ? "rgba(255,255,255,0.16)" : "rgba(0,0,0,0.09)") : theme.dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.045)",
+            backgroundColor: onArt
+              ? hovered
+                ? "rgba(255,255,255,0.95)"
+                : "rgba(255,255,255,0.82)"
+              : hovered
+                ? theme.dark
+                  ? "rgba(255,255,255,0.16)"
+                  : "rgba(0,0,0,0.09)"
+                : theme.dark
+                  ? "rgba(255,255,255,0.08)"
+                  : "rgba(0,0,0,0.045)",
           }}
         >
           <Favicon url={site.url} favicon={site.favicon} profileId={profileId} size={28} />
         </View>
-        <Text numberOfLines={1} style={{ width: TILE, textAlign: "center", fontSize: 11.5, color: theme.textSecondary }}>
+        <Text
+          numberOfLines={1}
+          style={[
+            { width: TILE, textAlign: "center", fontSize: 11.5, color: onArt ? "#FFFFFF" : theme.textSecondary },
+            onArt ? { textShadowColor: "rgba(0,0,0,0.55)", textShadowRadius: 6 } : null,
+          ]}
+        >
           {siteLabel(site)}
         </Text>
       </Pressable>

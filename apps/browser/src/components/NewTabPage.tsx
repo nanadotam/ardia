@@ -6,6 +6,7 @@ import { hex, layout, useTheme } from "../lib/theme";
 import { useWindowId } from "../store/hooks";
 import { useCardAnchors } from "./layout/windowLayout";
 import { NewTabExtras } from "./ntp";
+import { NtpBackdrop } from "./ntp/Backdrop";
 import { Greeting, HomeSections } from "./ntp/HomeSections";
 import { useOnboarding } from "./onboarding/state";
 import { Omnibox } from "./Omnibox";
@@ -55,6 +56,7 @@ export function NewTabPage({ tabId, toolbar = true }: { tabId: string; toolbar?:
 
   return (
     <View style={{ flex: 1 }} onLayout={(e) => setSize(e.nativeEvent.layout)}>
+      <NtpBackdrop radius={layout.cardRadius} />
       {playIntro && theme.powerUpPalette && (
         <PowerUp
           style={StyleSheet.absoluteFill}
@@ -65,7 +67,7 @@ export function NewTabPage({ tabId, toolbar = true }: { tabId: string; toolbar?:
           halo={bar}
         />
       )}
-      {!onboarding && <Greeting left={x} top={top - 62} width={width} />}
+      {!onboarding && <Greeting left={x} top={top - 74} width={width} />}
       <View onLayout={(e) => setPanelHeight(e.nativeEvent.layout.height)} style={{ position: "absolute", left: x, top, width }}>
         <Surface style={StyleSheet.absoluteFill} fill="#00000000" cornerRadius={20} shadowColor="#000000" shadowOpacity={0.08} shadowRadius={2} shadowOffset={[0, 0.5]} />
         <Surface style={StyleSheet.absoluteFill} fill="#00000000" cornerRadius={20} shadowColor="#000000" shadowOpacity={0.04} shadowRadius={1} shadowOffset={[0, 2]} />

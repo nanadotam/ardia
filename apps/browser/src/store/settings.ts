@@ -34,6 +34,11 @@ export type Settings = {
   hideToolbarWhileScrolling: boolean;
   edgeToEdge: boolean;
   greetingName: string;
+  greetingFont: "exposure" | "system";
+  ntpSuggestions: boolean;
+  commandBarSuggestions: boolean;
+  ntpBackground: string;
+  ntpBackgroundPath: string;
   newTabPosition: "top" | "bottom";
   newTabOpens: "page" | "commandBar";
   warnBeforeClosingLastTab: boolean;
@@ -68,6 +73,7 @@ export type Settings = {
   addressBar: "toolbar" | "sidebar";
   commandBarPlacement: "field" | "centred";
   scrolling: ScrollingMode;
+  followSystemAppearance: boolean;
 
   defaultProfileId: string;
 
@@ -101,6 +107,11 @@ export const DEFAULT_SETTINGS: Settings = {
   hideToolbarWhileScrolling: true,
   edgeToEdge: false,
   greetingName: "",
+  greetingFont: "exposure",
+  ntpSuggestions: true,
+  commandBarSuggestions: false,
+  ntpBackground: "none",
+  ntpBackgroundPath: "",
   newTabPosition: "bottom",
   newTabOpens: "commandBar",
   warnBeforeClosingLastTab: true,
@@ -133,6 +144,7 @@ export const DEFAULT_SETTINGS: Settings = {
   addressBar: "toolbar",
   commandBarPlacement: "field",
   scrolling: "silky",
+  followSystemAppearance: true,
   defaultProfileId: DEFAULT_PROFILE_ID,
   shortcuts: {},
   openLinksInLittleArdia: true,
