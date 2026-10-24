@@ -1,4 +1,5 @@
 import { lastTabClosesWindow, onDownload, releaseProfile } from "@ardia/ardiacore";
+import { writeEnginePrefs } from "./enginePrefs";
 import {
   cancelFocusMove,
   claimFocus,
@@ -156,6 +157,10 @@ export function startNativeSync() {
   });
   store.subscribe((s, prev) => {
     if (s.settings.appearance !== prev.settings.appearance) void setAppearance(s.settings.appearance);
+  });
+  writeEnginePrefs(store.getState().settings);
+  store.subscribe((s, prev) => {
+    if (s.settings.scrolling !== prev.settings.scrolling) writeEnginePrefs(s.settings);
   });
   useExtensions.subscribe((e, prev) => {
     if (e.lists !== prev.lists) menuTimer ??= setTimeout(syncMenu, 120);

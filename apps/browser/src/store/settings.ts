@@ -17,6 +17,8 @@ export type SearchEngineId = string;
 
 export type BatterySaverWhen = "lowBattery" | "unplugged" | "never";
 
+export type ScrollingMode = "battery" | "smooth" | "silky";
+
 export type Settings = {
   warnBeforeQuitting: boolean;
   warnBeforeClosingWindow: boolean;
@@ -65,6 +67,7 @@ export type Settings = {
   appearance: "auto" | "light" | "dark";
   addressBar: "toolbar" | "sidebar";
   commandBarPlacement: "field" | "centred";
+  scrolling: ScrollingMode;
 
   defaultProfileId: string;
 
@@ -129,6 +132,7 @@ export const DEFAULT_SETTINGS: Settings = {
   appearance: "auto",
   addressBar: "toolbar",
   commandBarPlacement: "field",
+  scrolling: "silky",
   defaultProfileId: DEFAULT_PROFILE_ID,
   shortcuts: {},
   openLinksInLittleArdia: true,

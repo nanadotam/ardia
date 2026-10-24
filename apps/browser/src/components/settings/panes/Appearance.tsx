@@ -1,4 +1,5 @@
 import { setAppearance, setAppIcon, Symbol, type AppIcon } from "@ardia/shell";
+import { useState } from "react";
 import { Image, Pressable, Text, View } from "react-native";
 import { useTheme } from "../../../lib/theme";
 import { useBrowser } from "../../../store/browser";
@@ -30,6 +31,7 @@ export function AppearancePane() {
         ))}
       </View>
       <AddressBarPicker />
+      <ScrollingPicker />
       <AppIconPicker />
     </View>
   );
@@ -65,6 +67,34 @@ function AddressBarPicker() {
             onChange={(v) => useBrowser.getState().updateSettings({ commandBarPlacement: v })}
             minWidth={160}
           />
+        </Row>
+      </Group>
+    </>
+  );
+}
+
+const SCROLLING: { value: Settings["scrolling"]; title: string }[] = [
+  { value: "silky", title: "Silky" },
+  { value: "smooth", title: "Smooth" },
+  { value: "battery", title: "Battery saver" },
+];
+
+function ScrollingPicker() {
+  const scrolling = useBrowser((s) => s.settings.scrolling);
+  const [launched] = useState(scrolling);
+  return (
+    <>
+      <SectionHeader
+        anchor="appearance.scrolling"
+        description={
+          launched === scrolling
+            ? "Silky draws pages at your display's full rate (120 Hz on ProMotion) and glides mouse-wheel and keyboard scrolls. Smooth keeps the full rate with standard wheel steps. Battery saver holds pages at 60 Hz until you touch them."
+            : "Takes effect the next time Ardia opens."
+        }
+      />
+      <Group>
+        <Row anchor="appearance.scrollingMode">
+          <PopUp value={scrolling} options={SCROLLING} onChange={(v) => useBrowser.getState().updateSettings({ scrolling: v })} minWidth={160} />
         </Row>
       </Group>
     </>

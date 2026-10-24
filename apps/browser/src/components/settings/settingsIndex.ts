@@ -204,6 +204,13 @@ const ROWS: Record<SettingsPane, Section[]> = {
         },
       },
     },
+    {
+      section: "Scrolling",
+      rows: {
+        scrolling: { title: "Scrolling", description: "How smoothly pages scroll and animate.", keywords: ["smooth scrolling", "120hz", "promotion", "frame rate", "fps", "silky", "inertia", "momentum", "mouse wheel"] },
+        scrollingMode: { title: "Page scrolling", description: "Silky, Smooth or Battery saver.", keywords: ["smooth scrolling", "120hz", "promotion"] },
+      },
+    },
     { section: "App Icon", rows: { appIcon: { title: "App Icon", description: "Shown in the Dock and the app switcher. The Dock keeps it after you quit.", keywords: ["dock icon", "logo"] } } },
   ],
   privacy: [

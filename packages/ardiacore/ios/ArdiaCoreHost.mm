@@ -153,6 +153,13 @@ static NSString *AppDataDirectory() {
   return [support URLByAppendingPathComponent:NSBundle.mainBundle.bundleIdentifier ?: @"Ardia"].path;
 }
 
+static NSString *ScrollingMode(NSString *dir) {
+  NSData *data = dir ? [NSData dataWithContentsOfFile:[dir stringByAppendingPathComponent:@"engine-prefs.json"]] : nil;
+  NSDictionary *prefs = data ? [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] : nil;
+  NSString *mode = [prefs isKindOfClass:NSDictionary.class] && [prefs[@"scrolling"] isKindOfClass:NSString.class] ? prefs[@"scrolling"] : nil;
+  return [@[ @"battery", @"smooth", @"silky" ] containsObject:mode] ? mode : @"silky";
+}
+
 static NSDictionary *SavedSession(NSString *dir) {
   NSData *data = dir ? [NSData dataWithContentsOfFile:[dir stringByAppendingPathComponent:@"session.json"]] : nil;
   NSDictionary *session = data ? [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] : nil;
@@ -620,8 +627,10 @@ static void StartEarlyWindow() {
   const bool freezeLeastRecentTabs = !(tabFreezing && !strcmp(tabFreezing, "off"));
   const char *slowTabThaw = getenv("ARDIA_SLOW_TAB_THAW");
   const bool thawFrozenTabsRarely = !(slowTabThaw && !strcmp(slowTabThaw, "off"));
+  NSString *scrolling = ScrollingMode(AppDataDirectory());
+  const bool silkyScrolling = [scrolling isEqualToString:@"silky"];
   const char *mainFrameThrottle = getenv("ARDIA_MAIN_FRAME_THROTTLE");
-  const bool throttleMainFramesTo60Hz = !(mainFrameThrottle && !strcmp(mainFrameThrottle, "off"));
+  const bool throttleMainFramesTo60Hz = mainFrameThrottle ? strcmp(mainFrameThrottle, "off") != 0 : [scrolling isEqualToString:@"battery"];
   const char *scrollFullRate = getenv("ARDIA_SCROLL_FULL_RATE");
   const bool fullRateAfterInput = !(scrollFullRate && !strcmp(scrollFullRate, "off"));
   const char *walletPasses = getenv("ARDIA_WALLET_PASSES");
@@ -634,7 +643,7 @@ static void StartEarlyWindow() {
           (biometricsCheckPerTab ? "" : ",AutofillAiWalletPrivatePasses") +
           (freezeLeastRecentTabs ? "" : ",InfiniteTabsFreezing"),
       std::string("--enable-features=WebContentsDiscard,BrowserInitiatedAutomaticPictureInPicture,ImprovedStartupBestEffortDelay:StartupDelayStopOnLoadingTimedOut/true,"
-                  "CPUMeasurementInFreezingPolicy:freezing_visible_protection_time/0s") +
+                  "CPUMeasurementInFreezingPolicy:freezing_visible_protection_time/0s") + (silkyScrolling ? ",ImpulseScrollAnimations" : "") +
           (freezeLeastRecentTabs ? (thawFrozenTabsRarely ? ",InfiniteTabsFreezing:ardia_unconnected_unfreeze_interval/600s" : ",InfiniteTabsFreezing") : "") + (throttleMainFramesTo60Hz ? (fullRateAfterInput ? ",ThrottleMainFrameTo60Hz,UrgentMainFrameForInput" : ",ThrottleMainFrameTo60Hz:ardia_full_rate_after_input/0s,UrgentMainFrameForInput") : ""),
       "--profile-directory=Default",
       "--js-flags=--no-memory-reducer",
