@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { expectFocus } from "../../lib/focusClaims";
+import { useBrowser } from "../../store/browser";
 
 export type LibrarySection = "spaces" | "archive" | "downloads" | "media";
 
@@ -11,7 +12,18 @@ export const useLibrary = create<LibraryState>()(() => ({ open: {} }));
 
 export const librarySection = (windowId: string): LibrarySection | undefined => useLibrary.getState().open[windowId];
 
+export function archivedFor<T extends { kind?: string; tab: { profileId: string } }>(closed: readonly T[], profileId: string | undefined): T[] {
+  if (!profileId) return [];
+  return closed.filter((c) => c.kind === "tab" && c.tab.profileId === profileId);
+}
+
+export function libraryAllowed(windowId: string): boolean {
+  const w = useBrowser.getState().windows[windowId];
+  return !!w && !w.incognito;
+}
+
 export function openLibrary(windowId: string, section: LibrarySection = librarySection(windowId) ?? "spaces") {
+  if (!libraryAllowed(windowId)) return;
   expectFocus(windowId, LIBRARY_FOCUS);
   useLibrary.setState((s) => ({ open: { ...s.open, [windowId]: section } }));
 }

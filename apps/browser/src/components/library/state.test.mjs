@@ -16,3 +16,27 @@ test("archived items group by day, newest first", () => {
   ]);
   assert.equal(groups[0].items[0].t, at(24, 14), "newest first within a day");
 });
+
+test("Archived Tabs shows only this space's closed tabs, never a private window's", async () => {
+  const { archivedFor } = await import("./state.ts");
+  const closed = [
+    { kind: "tab", tab: { profileId: "default", url: "https://a.example/" } },
+    { kind: "tab", tab: { profileId: "incognito:1@", url: "https://secret.example/" } },
+    { kind: "tab", tab: { profileId: "work", url: "https://w.example/" } },
+    { kind: "window", tab: { profileId: "default", url: "https://win.example/" } },
+  ];
+  assert.deepEqual(archivedFor(closed, "default").map((c) => c.tab.url), ["https://a.example/"]);
+  assert.deepEqual(archivedFor(closed, undefined), []);
+});
+
+test("the Library never opens in a private window", async () => {
+  const { useBrowser } = await import("../../store/browser.ts");
+  const { openLibrary, librarySection } = await import("./state.ts");
+  useBrowser.getState().hydrate({});
+  const normal = useBrowser.getState().createWindow({ url: "https://a.example/" });
+  const secret = useBrowser.getState().createWindow({ incognito: true, url: "https://b.example/" });
+  openLibrary(secret, "archive");
+  assert.equal(librarySection(secret), undefined);
+  openLibrary(normal, "archive");
+  assert.equal(librarySection(normal), "archive");
+});

@@ -2,7 +2,7 @@ import { OutsidePressArea, Surface, Symbol } from "@ardia/shell";
 import { useEffect, useRef } from "react";
 import { ActivityIndicator, Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { create } from "zustand";
-import { ask, plainText, providerName } from "../../lib/ai";
+import { aiAllowedIn, ask, isWebPage, plainText, providerName } from "../../lib/ai";
 import { hex, useTheme } from "../../lib/theme";
 import { webviews } from "../../lib/webviews";
 import { useBrowser } from "../../store/browser";
@@ -25,7 +25,10 @@ function put(windowId: string, summary: Summary | null) {
   });
 }
 
+const requests = new Map<string, number>();
+
 export function closePageSummary(windowId: string) {
+  requests.set(windowId, (requests.get(windowId) ?? 0) + 1);
   put(windowId, null);
 }
 
@@ -35,6 +38,11 @@ export function summarizePage(windowId: string) {
   const tab = tabId ? s.tabs[tabId] : undefined;
   if (!tabId || !tab?.url) return;
   const base: Summary = { tabId, title: tab.title || tab.url, url: tab.url, state: "loading", text: "" };
+  if (!aiAllowedIn(s, windowId)) return put(windowId, { ...base, state: "failed", text: "Summaries are off in private windows." });
+  if (!isWebPage(tab.url)) return put(windowId, { ...base, state: "failed", text: "Only web pages can be summarized." });
+  const request = (requests.get(windowId) ?? 0) + 1;
+  requests.set(windowId, request);
+  const current = () => requests.get(windowId) === request && useSummaries.getState().open[windowId]?.tabId === tabId;
   put(windowId, base);
   const view = webviews.get(tabId);
   const read = view ? view.evaluate<string>(`post('result', JSON.stringify((document.body && document.body.innerText || "").slice(0, ${PAGE_CHARS})))`) : Promise.resolve(null);
@@ -45,10 +53,10 @@ export function summarizePage(windowId: string) {
       return ask(SUMMARY_INSTRUCTIONS, `Title: ${base.title}\nURL: ${base.url}\n\n${body}`);
     })
     .then(({ text, provider }) => {
-      if (useSummaries.getState().open[windowId]?.tabId === tabId) put(windowId, { ...base, state: "done", text: plainText(text), by: providerName(provider) });
+      if (current()) put(windowId, { ...base, state: "done", text: plainText(text), by: providerName(provider) });
     })
     .catch((e: Error) => {
-      if (useSummaries.getState().open[windowId]?.tabId === tabId) put(windowId, { ...base, state: "failed", text: e.message });
+      if (current()) put(windowId, { ...base, state: "failed", text: e.message });
     });
 }
 
@@ -56,7 +64,7 @@ export function askClaudeAboutPage(windowId: string) {
   const s = useBrowser.getState();
   const tabId = activeTabId(s, windowId);
   const url = tabId ? s.tabs[tabId]?.url : undefined;
-  if (!url) return;
+  if (!aiAllowedIn(s, windowId) || !isWebPage(url)) return;
   openUrl(`https://claude.ai/new?q=${encodeURIComponent(`Read ${url} and tell me what it's about in a few bullet points.`)}`, windowId, "foreground");
 }
 

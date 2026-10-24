@@ -22,7 +22,7 @@ import { hostLabel, matchesQuery } from "../pages/PageLayout";
 import { Favicon, IconButton, useHover } from "../primitives";
 import { openThemePanel } from "../theme/ThemePanel";
 import { libraryReveal, useLibraryPull } from "./pull";
-import { byDay, closeLibrary, LIBRARY_FOCUS, openLibrary, useLibrary, type LibrarySection } from "./state";
+import { archivedFor, byDay, closeLibrary, LIBRARY_FOCUS, openLibrary, useLibrary, type LibrarySection } from "./state";
 
 const RAIL = 112;
 const SHEET_INSET = 14;
@@ -313,11 +313,13 @@ function TabLine({ title, url, favicon, profileId, pinned, onPress, detail }: { 
 function ArchiveSection({ windowId, query }: { windowId: string; query: string }) {
   const theme = useTheme();
   const cleaned = useBrowser((s) => cleanedTabsFor(s, windowId));
-  const closed = useBrowser((s) => s.closedTabs);
+  const closedTabs = useBrowser((s) => s.closedTabs);
+  const profileId = useBrowser((s) => s.windows[windowId]?.profileId);
+  const closed = useMemo(() => archivedFor(closedTabs, profileId), [closedTabs, profileId]);
   const groups = useMemo(() => {
     const entries: { entry: ClosedTab; from: "cleaned" | "closed" }[] = [
       ...cleaned.map((entry) => ({ entry, from: "cleaned" as const })),
-      ...closed.filter((c) => c.kind === "tab").map((entry) => ({ entry, from: "closed" as const })),
+      ...closed.map((entry) => ({ entry, from: "closed" as const })),
     ].filter(({ entry }) => matchesQuery(query, entry.tab.title, entry.tab.url));
     return byDay(entries, (e) => e.entry.closedAt);
   }, [cleaned, closed, query]);

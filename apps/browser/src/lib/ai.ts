@@ -184,6 +184,13 @@ export async function ask(system: string, prompt: string, { json = false }: { js
   return { text: text.replace(/<think>[\s\S]*?<\/think>/g, "").trim(), provider };
 }
 
+export function aiAllowedIn(s: Pick<ReturnType<typeof useBrowser.getState>, "windows">, windowId: string): boolean {
+  const w = s.windows[windowId];
+  return !!w && !w.incognito;
+}
+
+export const isWebPage = (url: string | undefined) => !!url && /^https?:\/\//i.test(url);
+
 export function plainText(text: string): string {
   return text
     .replace(/\*\*(.+?)\*\*/g, "$1")
