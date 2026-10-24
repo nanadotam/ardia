@@ -126,9 +126,12 @@ export type ImportResult = {
   vaultToken?: string;
   spaces: SpaceSuggestion[];
   favorites: ImportedTab[];
+  shortcuts?: ImportedShortcut[];
   failed: ImportKind[];
   warnings: ImportWarning[];
 };
+
+export type ImportedShortcut = { action: string; key: string; modifiers: string[] };
 
 export type SafariExport = {
   bookmarks?: BookmarkNode;

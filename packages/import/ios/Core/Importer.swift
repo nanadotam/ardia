@@ -120,6 +120,7 @@ public final class Importer: @unchecked Sendable {
         case (.favorites, .arc):
           result.favorites = try arcSidebar().favorites[profileId] ?? []
           count = result.favorites.count
+          if let data = try? Data(contentsOf: discovery.arcKeyBindingsURL()) { result.shortcuts = ArcKeyBindings.parse(data) }
 
         case (.passwords, .chromium), (.passwords, .arc):
           guard let key = key(browserId) else { throw ImportError.locked("Unlock \(def.name) to import passwords") }
