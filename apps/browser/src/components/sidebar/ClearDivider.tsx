@@ -5,18 +5,22 @@ import { useTheme } from "../../lib/theme";
 import { useHover } from "../primitives";
 import { closeAllTabs } from "./menus";
 import { tidyPins } from "./tidyPinsUi";
+import { tidyTabs, useTidyingTabs } from "./tidyTabs";
 
 const CLEAR_DIVIDER_HEIGHT = 16;
 
-type DividerProps = { windowId: string; profileId: string; spaced: boolean; clear: boolean; tidy: boolean };
+type DividerProps = { windowId: string; profileId: string; spaced: boolean; clear: boolean; tidy: boolean; tidyTabs?: boolean };
 
-export const ClearDivider = memo(function ClearDivider({ windowId, profileId, spaced, clear, tidy }: DividerProps) {
+export const ClearDivider = memo(function ClearDivider({ windowId, profileId, spaced, clear, tidy, tidyTabs: tabsTidy = false }: DividerProps) {
   const theme = useTheme();
+  const tidying = useTidyingTabs((s) => !!s.busy[windowId]);
   return (
     <View style={{ height: CLEAR_DIVIDER_HEIGHT, marginTop: spaced ? 7 : 0, flexDirection: "row", alignItems: "center", paddingLeft: 9, paddingRight: 9 }}>
       <View style={{ flex: 1, height: 1, backgroundColor: theme.divider }} />
       {tidy ? <DividerButton title="Tidy" symbol="sparkles" iconWidth={10} label="Tidy pinned tabs" onPress={() => tidyPins(windowId, profileId)} /> : null}
-      {tidy && clear ? <View style={{ width: 1, height: 9, marginLeft: 8, backgroundColor: theme.divider }} /> : null}
+      {tidy && tabsTidy ? <View style={{ width: 1, height: 9, marginLeft: 8, backgroundColor: theme.divider }} /> : null}
+      {tabsTidy ? <DividerButton title={tidying ? "Tidying…" : "Tidy Tabs"} symbol="wand.and.sparkles" iconWidth={11} label="Sort these tabs into folders" onPress={() => void tidyTabs(windowId)} /> : null}
+      {(tidy || tabsTidy) && clear ? <View style={{ width: 1, height: 9, marginLeft: 8, backgroundColor: theme.divider }} /> : null}
       {clear ? <DividerButton title="Clear" symbol="arrow.down" iconWidth={8} label="Clear unpinned tabs" onPress={() => closeAllTabs(windowId)} /> : null}
     </View>
   );

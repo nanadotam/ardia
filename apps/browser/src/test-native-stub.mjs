@@ -242,3 +242,5 @@ export const webStoreInstalls = [];
 export const installFromWebStore = async (id, profile) => (webStoreInstalls.push({ id, profile }), id);
 export const reloadExtension = (id, profile) => userScripts().engine.reload(id, profile);
 export const uninstallExtension = (id, profile) => userScripts().engine.uninstall(id, profile);
+export const onDeviceModelStatus = () => "unsupported";
+export const onDeviceRespond = () => Promise.reject(new Error("unsupported"));

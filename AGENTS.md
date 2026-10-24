@@ -48,8 +48,9 @@ For the architecture and the test tooling, read `docs/agent-brief.md`.
   Keep test data in a scratch dir, not in `~/Documents`.
 - **Dia is a read-only reference.** You may take screenshots and read its app bundle; never click or type
   in it, and never read its user data or any browser's real profile.
-- **No AI features.** This is the owner's decision. Dia's AI rows in `docs/dia-feature-parity.md`
-  stay ⏸.
+- **AI stays small and optional (this fork).** Tidy Tabs, Summarize Page and tab-to-search for Claude/ChatGPT,
+  through Apple's on-device model, a local model or the owner's API key; everything works with AI off. Upstream
+  (mantrakp04/ardia) has no AI features, so never include AI work in upstream pull requests.
 
 ## Building features
 - **Sources of truth.** `docs/dia-feature-parity.md` is the checklist; update its row when you ship.

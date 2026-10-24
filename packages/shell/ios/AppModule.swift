@@ -1,6 +1,9 @@
 import AppKit
 import MachO
 import ExpoModulesCore
+#if canImport(FoundationModels)
+@_weakLinked import FoundationModels
+#endif
 
 public class AppModule: Module {
   public func definition() -> ModuleDefinition {
@@ -34,6 +37,15 @@ public class AppModule: Module {
     }
 
     Function("userFullName") { () -> String in NSFullUserName() }
+    Function("onDeviceModelStatus") { () -> String in OnDeviceModel.status() }
+    AsyncFunction("onDeviceRespond") { (instructions: String, prompt: String, promise: Promise) in
+      OnDeviceModel.respond(instructions: instructions, prompt: prompt) { result in
+        switch result {
+        case .success(let text): promise.resolve(text)
+        case .failure(let error): promise.reject("ERR_ON_DEVICE_MODEL", error.localizedDescription)
+        }
+      }
+    }
     AsyncFunction("updaterState") { () -> [String: Any] in AppUpdater.shared.state }.runOnQueue(.main)
     AsyncFunction("checkForUpdates") { AppUpdater.shared.checkForUpdates(nil) }.runOnQueue(.main)
     AsyncFunction("setAutomaticUpdateChecks") { (on: Bool) in AppUpdater.shared.setAutomaticChecks(on) }.runOnQueue(.main)
@@ -908,3 +920,43 @@ enum KeyEquivalents {
   }
 }
 #endif
+
+enum OnDeviceModel {
+  struct Unavailable: LocalizedError {
+    let reason: String
+    var errorDescription: String? { reason }
+  }
+
+  static func status() -> String {
+    #if canImport(FoundationModels)
+    if #available(macOS 26.0, *) {
+      switch SystemLanguageModel.default.availability {
+      case .available: return "available"
+      case .unavailable(.deviceNotEligible): return "notEligible"
+      case .unavailable(.appleIntelligenceNotEnabled): return "notEnabled"
+      case .unavailable(.modelNotReady): return "notReady"
+      default: return "unavailable"
+      }
+    }
+    #endif
+    return "unsupported"
+  }
+
+  static func respond(instructions: String, prompt: String, done: @escaping (Result<String, Error>) -> Void) {
+    #if canImport(FoundationModels)
+    if #available(macOS 26.0, *), case .available = SystemLanguageModel.default.availability {
+      Task {
+        do {
+          let session = LanguageModelSession(instructions: instructions)
+          let response = try await session.respond(to: prompt)
+          done(.success(response.content))
+        } catch {
+          done(.failure(error))
+        }
+      }
+      return
+    }
+    #endif
+    done(.failure(Unavailable(reason: "Apple's on-device model isn't available (\(status())).")))
+  }
+}

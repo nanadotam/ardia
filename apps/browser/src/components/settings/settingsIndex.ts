@@ -26,6 +26,15 @@ const APP = "Ardia";
 const ROWS: Record<SettingsPane, Section[]> = {
   general: [
     {
+      section: "AI",
+      rows: {
+        aiProvider: { title: "AI", description: "Which AI Tidy Tabs and Summarize Page use.", keywords: ["ai", "arc max", "tidy tabs", "summarize", "claude", "chatgpt", "ollama", "lm studio", "apple intelligence", "llm"] },
+        aiApple: { title: "Apple Intelligence", description: "Apple's on-device model. Free and private.", keywords: ["on-device", "foundation models", "private"] },
+        aiLocal: { title: "Local model", description: "Ollama or LM Studio on this Mac.", keywords: ["ollama", "lm studio", "local llm", "offline"] },
+        aiClaudeKey: { title: "Claude API key", description: "Uses Claude through the Anthropic API.", keywords: ["anthropic", "api key", "claude"] },
+      },
+    },
+    {
       section: "General",
       rows: {
         defaultBrowser: { title: "Default browser", description: `Make ${APP} your default browser.`, keywords: ["default", "set as default", "links"] },

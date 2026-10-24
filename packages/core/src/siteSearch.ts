@@ -4,6 +4,9 @@ import { hostOf, searchUrlFor } from "./omnibox.ts";
 export type SiteSearch = { host: string; name: string; url: string };
 
 const POPULAR_SITE_SEARCHES: readonly SiteSearch[] = [
+  { host: "claude.ai", name: "Claude", url: "https://claude.ai/new?q=%s" },
+  { host: "chatgpt.com", name: "ChatGPT", url: "https://chatgpt.com/?q=%s" },
+  { host: "perplexity.ai", name: "Perplexity", url: "https://www.perplexity.ai/search?q=%s" },
   { host: "youtube.com", name: "YouTube", url: "https://www.youtube.com/results?search_query=%s" },
   { host: "wikipedia.org", name: "Wikipedia", url: "https://en.wikipedia.org/w/index.php?search=%s" },
   { host: "github.com", name: "GitHub", url: "https://github.com/search?q=%s" },

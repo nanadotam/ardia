@@ -38,6 +38,8 @@ import { openSplitPane } from "../components/layout/splitActions";
 import { runSidebarCommand } from "../components/sidebar/commands";
 import { numberedTabs } from "../components/sidebar/entries";
 import { toggleTabOverview } from "../components/tabOverview/state";
+import { askClaudeAboutPage, summarizePage } from "../components/ai/PageSummary";
+import { tidyTabs } from "../components/sidebar/tidyTabs";
 import { toggleLibrary } from "../components/library/state";
 import { toggleThemePanel } from "../components/theme/ThemePanel";
 import { openExtensionFromMenu } from "../components/extensions/bridge";
@@ -156,6 +158,12 @@ export function runCommand({ command, arg, windowId: requested }: CommandEvent) 
       return toggleLibrary(windowId);
     case "editTheme":
       return toggleThemePanel(windowId);
+    case "tidyTabs":
+      return void tidyTabs(windowId);
+    case "summarizePage":
+      return summarizePage(windowId);
+    case "askClaudeAboutPage":
+      return askClaudeAboutPage(windowId);
     case "newTab":
       if (toggleNewTabBar(windowId)) return;
       return void s.newTab(windowId);

@@ -139,6 +139,8 @@ type AppModule = {
   devRenderIntroMusic(cues: IntroMusicCues, path: string): Promise<number | null>;
   devRunAppleScript(source: string): Promise<{ ok: boolean; result?: unknown; error?: string; number?: number }>;
   userFullName?(): string;
+  onDeviceModelStatus?(): string;
+  onDeviceRespond?(instructions: string, prompt: string): Promise<string>;
   devSnapshotWindow(windowId: string, path: string, transparent?: boolean): Promise<boolean>;
   devSetPointer(windowId: string, x: number, y: number, on: boolean): Promise<boolean>;
   devSetMouseButtons(pressed: number): Promise<boolean>;
@@ -254,3 +256,7 @@ export const devClick = (windowId: string, click: Click): Promise<ClickResult> =
 export const devMenuCommand = (command: string, arg: string | null = null) => App.devMenuCommand(command, arg);
 
 export const userFullName = (): string => App.userFullName?.() ?? "";
+export type OnDeviceModelStatus = "available" | "notEligible" | "notEnabled" | "notReady" | "unavailable" | "unsupported";
+export const onDeviceModelStatus = (): OnDeviceModelStatus => (App.onDeviceModelStatus?.() as OnDeviceModelStatus | undefined) ?? "unsupported";
+export const onDeviceRespond = (instructions: string, prompt: string): Promise<string> =>
+  App.onDeviceRespond ? App.onDeviceRespond(instructions, prompt) : Promise.reject(new Error("Apple's on-device model isn't available."));

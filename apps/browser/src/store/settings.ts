@@ -74,6 +74,9 @@ export type Settings = {
   commandBarPlacement: "field" | "centred";
   scrolling: ScrollingMode;
   followSystemAppearance: boolean;
+  aiProvider: "auto" | "apple" | "local" | "claude" | "off";
+  aiLocalUrl: string;
+  aiLocalModel: string;
 
   defaultProfileId: string;
 
@@ -145,6 +148,9 @@ export const DEFAULT_SETTINGS: Settings = {
   commandBarPlacement: "field",
   scrolling: "silky",
   followSystemAppearance: true,
+  aiProvider: "auto",
+  aiLocalUrl: "http://localhost:11434/v1",
+  aiLocalModel: "",
   defaultProfileId: DEFAULT_PROFILE_ID,
   shortcuts: {},
   openLinksInLittleArdia: true,
