@@ -239,7 +239,7 @@ export function menuState(s: BrowserState): MenuState {
 
   const disabled: string[] = [];
   if (!tab || !splitOf(s, tab.id)) disabled.push("focusNextPane", "focusPreviousPane");
-  if (w && (w.tabLayout ?? s.settings.tabLayout) === "top") disabled.push("toggleAddressBar");
+  if (w && (w.tabLayout ?? s.settings.tabLayout) === "top") disabled.push("toggleAddressBar", "toggleEdgeToEdge");
   if (!w) disabled.push(...WINDOW_COMMANDS, "toggleTabLayout", "openSplitPane");
   else {
     if (!page?.url) disabled.push(...PAGE_COMMANDS);
@@ -258,6 +258,7 @@ export function menuState(s: BrowserState): MenuState {
   if (s.settings.showFullUrl) checked.push("toggleFullUrl");
   if (s.settings.allowJavaScriptFromAppleEvents) checked.push("toggleJavaScriptFromAppleEvents");
   if (s.settings.addressBar === "sidebar") checked.push("toggleAddressBar");
+  if (s.settings.edgeToEdge) checked.push("toggleEdgeToEdge");
   checked.push(`setBookmarksBar:${s.settings.bookmarksBar}`);
   if ((w?.tabLayout ?? s.settings.tabLayout) === "sidebar") checked.push("toggleTabLayout");
   if (w && !w.sidebarOpen) checked.push("toggleSidebar");

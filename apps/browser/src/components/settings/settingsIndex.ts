@@ -108,6 +108,11 @@ const ROWS: Record<SettingsPane, Section[]> = {
           description: "Scrolling down tucks the toolbar into a thin strip with the site's name. Scroll up, or click the strip, to bring it back.",
           keywords: ["auto hide", "compact"],
         },
+        edgeToEdge: {
+          title: "Edge to edge when the sidebar is hidden",
+          description: "With the sidebar hidden, the page fills the whole window: no margins, no rounded corners, no toolbar, so a web app looks like an app. Point at the left edge for the sidebar and the window buttons. Also View › Edge to Edge (⌃⌘E).",
+          keywords: ["immersive", "borderless", "frameless", "no margins", "rounded corners", "full window", "app mode", "chromeless"],
+        },
         showSidebarButton: { title: "Show sidebar button", description: "⌘S and View › Auto-Hide Tabs still hide and show the sidebar.", keywords: ["toggle sidebar"] },
         balancedTopApps: {
           title: "Grow Top Apps as the sidebar widens",

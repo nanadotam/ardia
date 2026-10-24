@@ -15,11 +15,12 @@ import { CreateProfileHost } from "./components/profiles/CreateProfile";
 import { useFullscreenTab } from "./components/layout/pageState";
 import { ProfileTint } from "./components/layout/ProfileSwipe";
 import { TOP_CARD_INSET, TOP_STRIP_HEIGHT, TopStripPeek, TopTabStrip } from "./components/layout/TopTabStrip";
-import { useTabLayout } from "./components/layout/windowLayout";
+import { edgeToEdgeWhenHidden, useTabLayout } from "./components/layout/windowLayout";
 import { WindowProfile } from "./components/layout/WindowProfile";
 import { DockedLayout } from "./components/layout/SidebarDock";
 import { LittleArdiaWindow } from "./components/littleArdia/LittleArdiaWindow";
 import { SidebarOverlays } from "./components/sidebar/Overlays";
+import { TabOverviewHost } from "./components/tabOverview/TabOverview";
 import { layout, ThemeScope, useTheme } from "./lib/theme";
 import { useBrowser } from "./store/browser";
 import { useWindowId, WindowContext } from "./store/hooks";
@@ -52,6 +53,7 @@ function BrowserWindow() {
   const topTabs = useTabLayout() === "top";
   const showStrip = useBrowser((s) => topTabs && !!s.windows[windowId]?.sidebarOpen);
   const fullscreen = !!useFullscreenTab(windowId);
+  const edgeWhenHidden = useBrowser((s) => edgeToEdgeWhenHidden(s, windowId));
   const [width, setWidth] = useState(0);
   const card = (
     <>
@@ -68,6 +70,7 @@ function BrowserWindow() {
       <DockedLayout
         fullscreen={fullscreen}
         topTabs={topTabs}
+        edgeWhenHidden={edgeWhenHidden}
         inset={
           showStrip
             ? { top: TOP_STRIP_HEIGHT, right: TOP_CARD_INSET, bottom: TOP_CARD_INSET, left: TOP_CARD_INSET }
@@ -90,6 +93,7 @@ function BrowserWindow() {
       <EditBookmarkDialog />
       <CreateProfileHost />
       <SidebarOverlays windowWidth={width} />
+      <TabOverviewHost />
       <OnboardingOverlay />
     </View>
   );

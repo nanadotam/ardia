@@ -39,7 +39,7 @@ import { dockMoving, useDockMotion, usePeekEdge } from "./layout/dockMotion";
 import { FrozenPage } from "./layout/frozenPage";
 import { holderOf } from "../store/pinShare";
 import { closeFolderPanelIn } from "./sidebar/tileFolderUi";
-import { setCardAnchor, setUrlAnchor, useAddressBarInSidebar, useTabLayout, useToolbarExtensionsWidths } from "./layout/windowLayout";
+import { setCardAnchor, setUrlAnchor, useAddressBarInSidebar, useEdgeToEdge, useTabLayout, useToolbarExtensionsWidths } from "./layout/windowLayout";
 import { NewTabPage } from "./NewTabPage";
 import { EmptyCard } from "./EmptyCard";
 import { InternalPage } from "./pages";
@@ -65,6 +65,7 @@ import { closeWebNotification, showWebNotification } from "../lib/webNotificatio
 import { isSmallWindow } from "../store/small";
 import { closeLittleArdiaOnEscape } from "./littleArdia/actions";
 import { PeekOverlay } from "./peek/PeekOverlay";
+import { notePinchScale } from "./tabOverview/state";
 import { closePeekOnEscape, dismissPeek, startPeeks } from "./peek/actions";
 
 export function ContentCard() {
@@ -74,6 +75,8 @@ export function ContentCard() {
   const fullscreenTab = useFullscreenTab(windowId);
   const tabLayout = useTabLayout();
   const addressInSidebar = useAddressBarInSidebar();
+  const edge = useEdgeToEdge();
+  const noToolbar = addressInSidebar || edge;
   const small = useBrowser((s) => isSmallWindow(s.windows[windowId]));
   const hideWhileScrolling = useBrowser((s) => s.settings.hideToolbarWhileScrolling);
   const showSidebarButton = useBrowser((s) => s.settings.showSidebarButton !== false);
@@ -244,7 +247,7 @@ export function ContentCard() {
     [windowId],
   );
 
-  const windowToolbar = !split && !fullscreenTab && !addressInSidebar && !small;
+  const windowToolbar = !split && !fullscreenTab && !noToolbar && !small;
   const peekEdge = usePeekEdge(windowId);
   const activeRect = activeId ? panes[activeId] : undefined;
   const popoversOverCard = peekEdge !== undefined && addressInSidebar && !small && !fullscreenTab && origin && activeRect ? activeId : undefined;
@@ -277,8 +280,9 @@ export function ContentCard() {
               fullscreen={tabId === fullscreenTab}
               covered={!!fullscreenTab && tabId !== fullscreenTab}
               geometry={geometryFor(rect)}
-              toolbar={!addressInSidebar && !small}
-              autoHide={hideWhileScrolling && !addressInSidebar && !small}
+              toolbar={!noToolbar && !small}
+              autoHide={hideWhileScrolling && !noToolbar && !small}
+              square={edge}
               small={small}
               mounted={mountedIds.has(tabId)}
               warm={warmPanes[tabId]}
@@ -292,7 +296,7 @@ export function ContentCard() {
         <WindowToolbar windowId={windowId} tabId={activeId} geometry={geometryFor(panes[activeId])} autoHide={hideWhileScrolling} />
       )}
       {size.width > 0 && !split && !fullscreenTab && (
-        <FrozenPage windowId={windowId} tabId={activeId} top={(!addressInSidebar && !small && !hideWhileScrolling ? layout.toolbarHeight : 0) + (barMode === "always" && !small && !hideWhileScrolling ? BOOKMARKS_BAR_HEIGHT : 0)} />
+        <FrozenPage windowId={windowId} tabId={activeId} top={(!noToolbar && !small && !hideWhileScrolling ? layout.toolbarHeight : 0) + (barMode === "always" && !small && !hideWhileScrolling ? BOOKMARKS_BAR_HEIGHT : 0)} />
       )}
       {split && !fullscreenTab && <SplitDividers split={split} dividers={dividers} width={size.width} height={size.height} />}
       {size.width > 0 && popoversOverCard && origin && activeRect && peekEdge !== undefined && (
@@ -329,6 +333,7 @@ const TabPane = memo(function TabPane({
   focused,
   inActiveSplit,
   fullscreen,
+  square = false,
   covered,
   geometry,
   toolbar,
@@ -349,6 +354,7 @@ const TabPane = memo(function TabPane({
   focused: boolean;
   inActiveSplit: boolean;
   fullscreen: boolean;
+  square?: boolean;
   covered: boolean;
   geometry: ToolbarGeometry;
   toolbar: boolean;
@@ -397,7 +403,7 @@ const TabPane = memo(function TabPane({
       style={{
         position: "absolute",
         ...(fills ? { left: 0, top: 0, right: 0, bottom: 0 } : { left: frame.x, top: frame.y, width: frame.width, height: frame.height }),
-        borderRadius: fullscreen ? 0 : layout.cardRadius,
+        borderRadius: fullscreen || square ? 0 : layout.cardRadius,
         overflow: "hidden",
         opacity: covered ? 0 : 1,
         backgroundColor: visible && !fullscreen ? theme.card : undefined,
@@ -653,7 +659,10 @@ const TabWebView = memo(function TabWebView({ tabId, visible, warm, peekOf }: { 
         store().updateTab(tabId, { url: "", title: "", favicon: null });
       }}
       onProgress={(progress) => !prewarmOnly() && setPageProgress(tabId, progress)}
-      onZoom={({ zoom }) => store().updateTab(tabId, { zoom })}
+      onZoom={({ zoom, pinchScale }) => {
+        notePinchScale(tabId, pinchScale);
+        store().updateTab(tabId, { zoom });
+      }}
       onFindResult={({ count, active }) => store().setFind(tabId, { count, active })}
       onFavicon={(favicon) => {
         if (!favicon || !tab()) return;

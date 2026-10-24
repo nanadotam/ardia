@@ -30,6 +30,7 @@ export type Settings = {
 
   tabLayout: "sidebar" | "top";
   hideToolbarWhileScrolling: boolean;
+  edgeToEdge: boolean;
   newTabPosition: "top" | "bottom";
   newTabOpens: "page" | "commandBar";
   warnBeforeClosingLastTab: boolean;
@@ -94,6 +95,7 @@ export const DEFAULT_SETTINGS: Settings = {
   commandBarPreference: "website",
   tabLayout: "sidebar",
   hideToolbarWhileScrolling: true,
+  edgeToEdge: false,
   newTabPosition: "bottom",
   newTabOpens: "page",
   warnBeforeClosingLastTab: true,

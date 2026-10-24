@@ -82,11 +82,13 @@ export function DockedLayout({
   fullscreen,
   topTabs,
   inset,
+  edgeWhenHidden = false,
   children,
 }: {
   fullscreen: boolean;
   topTabs: boolean;
   inset: Inset;
+  edgeWhenHidden?: boolean;
   children: ReactNode;
 }) {
   const windowId = useWindowId();
@@ -108,10 +110,15 @@ export function DockedLayout({
     () =>
       dock.interpolate({
         inputRange: [0, 1],
-        outputRange: [inset.left, width],
+        outputRange: [edgeWhenHidden ? 0 : inset.left, width],
       }),
-    [dock, width, inset.left],
+    [dock, width, inset.left, edgeWhenHidden],
   );
+  const edges = useMemo(() => {
+    if (!edgeWhenHidden || topTabs) return inset;
+    const grow = (to: number) => dock.interpolate({ inputRange: [0, 1], outputRange: [0, to], extrapolate: "clamp" });
+    return { top: grow(inset.top), right: grow(inset.right), bottom: grow(inset.bottom) };
+  }, [dock, edgeWhenHidden, topTabs, inset.top, inset.right, inset.bottom]);
   return (
     <>
       <Animated.View
@@ -121,9 +128,9 @@ export function DockedLayout({
             : {
                 flex: 1,
                 flexDirection: "row",
-                paddingTop: inset.top,
-                paddingRight: inset.right,
-                paddingBottom: inset.bottom,
+                paddingTop: edges.top,
+                paddingRight: edges.right,
+                paddingBottom: edges.bottom,
                 paddingLeft: topTabs ? inset.left : left,
               }
         }

@@ -20,7 +20,22 @@ export function addressBarInSidebar(s: BrowserState, windowId: string): boolean 
   );
 }
 
+export function edgeToEdgeWhenHidden(s: BrowserState, windowId: string): boolean {
+  const w = s.windows[windowId];
+  return !!w && !!s.settings.edgeToEdge && w.kind !== "small" && (w.tabLayout ?? s.settings.tabLayout) === "sidebar";
+}
+
+export function edgeToEdge(s: BrowserState, windowId: string): boolean {
+  return edgeToEdgeWhenHidden(s, windowId) && !s.windows[windowId]!.sidebarOpen;
+}
+
+export function useEdgeToEdge(): boolean {
+  const windowId = useWindowId();
+  return useBrowser((s) => edgeToEdge(s, windowId));
+}
+
 export function commandBarCentred(s: BrowserState, windowId: string): boolean {
+  if (edgeToEdge(s, windowId) && s.settings.addressBar !== "sidebar") return true;
   return s.settings.commandBarPlacement === "centred" && !!s.windows[windowId] && s.windows[windowId]!.kind !== "small";
 }
 

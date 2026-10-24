@@ -39,6 +39,8 @@ export type BrowserCommand =
   | "toggleFullUrl"
   | "toggleJavaScriptFromAppleEvents"
   | "toggleAddressBar"
+  | "toggleEdgeToEdge"
+  | "tabOverview"
   | "cast"
   | "zoomReset"
   | "zoomIn"
@@ -126,6 +128,7 @@ export type WindowEvent =
   | { type: "close"; id: string }
   | { type: "frame"; id: string; frame: [number, number, number, number] }
   | { type: "leftEdge"; id: string; over: boolean; point: [number, number] }
+  | { type: "pinch"; id: string; direction: "in" | "out" }
   | { type: "closeRequest"; id: string };
 
 export type AppEvent =
@@ -241,6 +244,7 @@ const Shell = requireNativeModule<{
   focusWindow(id: string): Promise<void>;
   setTrafficLightsCenter(id: string, center: [number, number] | null): Promise<void>;
   watchLeftEdge?(id: string, on: boolean, hold: number): Promise<void>;
+  watchPinch?(on: boolean): Promise<void>;
   dragPreviewBegin?(windowId: string, chip: Rect4, grab: [number, number]): Promise<void>;
   dragPreviewPage?(base64: string, frame: Rect4): Promise<void>;
   dragPreviewUpdate?(shape: DragPreviewShape, point: [number, number]): Promise<void>;
@@ -315,6 +319,7 @@ export const setWindowTitle = (id: string, title: string) => Shell.setWindowTitl
 export const setTrafficLightsCenter = (id: string, center: [number, number] | null) =>
   Shell.setTrafficLightsCenter(id, center);
 export const watchLeftEdge = (id: string, on: boolean, hold = 0) => void Shell.watchLeftEdge?.(id, on, hold);
+export const watchPinch = (on: boolean) => void Shell.watchPinch?.(on);
 type Rect4 = [number, number, number, number];
 export type DragPreviewShape = "hidden" | "pill" | "card";
 export const dragPreview = {

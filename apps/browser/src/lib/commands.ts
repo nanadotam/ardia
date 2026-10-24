@@ -37,6 +37,7 @@ import { goBack, goForward } from "../components/layout/history";
 import { openSplitPane } from "../components/layout/splitActions";
 import { runSidebarCommand } from "../components/sidebar/commands";
 import { numberedTabs } from "../components/sidebar/entries";
+import { toggleTabOverview } from "../components/tabOverview/state";
 import { openExtensionFromMenu } from "../components/extensions/bridge";
 import { toggleCastPicker } from "../components/media/cast";
 import { openManageExtensions, openPinDialog, openWebStore } from "../components/extensions/state";
@@ -90,6 +91,8 @@ export function runCommand({ command, arg, windowId: requested }: CommandEvent) 
       return s.updateSettings({ showFullUrl: !s.settings.showFullUrl });
     case "toggleJavaScriptFromAppleEvents":
       return s.updateSettings({ allowJavaScriptFromAppleEvents: !s.settings.allowJavaScriptFromAppleEvents });
+    case "toggleEdgeToEdge":
+      return s.updateSettings({ edgeToEdge: !s.settings.edgeToEdge });
     case "toggleAddressBar":
       return s.updateSettings({ addressBar: s.settings.addressBar === "sidebar" ? "toolbar" : "sidebar" });
     case "openSettings":
@@ -145,6 +148,8 @@ export function runCommand({ command, arg, windowId: requested }: CommandEvent) 
   if (runSidebarCommand(command, arg, windowId)) return;
 
   switch (command) {
+    case "tabOverview":
+      return toggleTabOverview(windowId);
     case "newTab":
       if (toggleNewTabBar(windowId)) return;
       return void s.newTab(windowId);
