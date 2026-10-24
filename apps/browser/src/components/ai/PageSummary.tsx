@@ -2,7 +2,7 @@ import { OutsidePressArea, Surface, Symbol } from "@ardia/shell";
 import { useEffect, useRef } from "react";
 import { ActivityIndicator, Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { create } from "zustand";
-import { ask, plainText, PROVIDER_NAMES } from "../../lib/ai";
+import { ask, plainText, providerName } from "../../lib/ai";
 import { hex, useTheme } from "../../lib/theme";
 import { webviews } from "../../lib/webviews";
 import { useBrowser } from "../../store/browser";
@@ -45,7 +45,7 @@ export function summarizePage(windowId: string) {
       return ask(SUMMARY_INSTRUCTIONS, `Title: ${base.title}\nURL: ${base.url}\n\n${body}`);
     })
     .then(({ text, provider }) => {
-      if (useSummaries.getState().open[windowId]?.tabId === tabId) put(windowId, { ...base, state: "done", text: plainText(text), by: PROVIDER_NAMES[provider] });
+      if (useSummaries.getState().open[windowId]?.tabId === tabId) put(windowId, { ...base, state: "done", text: plainText(text), by: providerName(provider) });
     })
     .catch((e: Error) => {
       if (useSummaries.getState().open[windowId]?.tabId === tabId) put(windowId, { ...base, state: "failed", text: e.message });
@@ -119,7 +119,7 @@ function PageSummaryCard({ windowId, summary, right, top }: { windowId: string; 
               </ScrollView>
             )}
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingTop: 2 }}>
-              <Text style={{ flex: 1, fontSize: 11, color: theme.textTertiary }}>{summary.by ? `Summarised with ${summary.by}` : summary.state === "failed" ? "Settings › General › AI" : ""}</Text>
+              <Text style={{ flex: 1, fontSize: 11, color: theme.textTertiary }}>{summary.by ? `Summarised with ${summary.by}` : summary.state === "failed" ? "Settings › AI" : ""}</Text>
               <Pressable onPress={() => askClaudeAboutPage(windowId)} style={StyleSheet.flatten({ paddingHorizontal: 9, height: 24, borderRadius: 7, justifyContent: "center", backgroundColor: theme.rowHover })}>
                 <Text style={{ fontSize: 11.5, fontWeight: "600", color: theme.textPrimary }}>Ask Claude</Text>
               </Pressable>

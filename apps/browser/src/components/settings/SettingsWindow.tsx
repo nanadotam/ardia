@@ -13,6 +13,7 @@ import { SettingsSearchField, SettingsSearchResults } from "./SettingsSearch";
 import { AdvancedPane } from "./panes/Advanced";
 import { AppearancePane } from "./panes/Appearance";
 import { CalendarPane } from "./panes/Calendar";
+import { AiPane } from "./panes/Ai";
 import { GeneralPane } from "./panes/General";
 import { LiveFoldersPane } from "./panes/LiveFolders";
 import { ExtensionsPane } from "./panes/Extensions";
@@ -176,6 +177,8 @@ function Pane({ pane, profileId }: { pane: SettingsPane; profileId: string | nul
       return <LiveFoldersPane />;
     case "calendar":
       return <CalendarPane />;
+    case "ai":
+      return <AiPane />;
     case "advanced":
       return <AdvancedPane />;
   }

@@ -7,6 +7,7 @@ export const PANES: { id: SettingsPane; title: string; icon: string }[] = [
   { id: "sync", title: "Sync", icon: "arrow.triangle.2.circlepath" },
   { id: "tabs", title: "Tabs", icon: "square.on.square" },
   { id: "appearance", title: "Appearance", icon: "circle.lefthalf.filled" },
+  { id: "ai", title: "AI", icon: "sparkles" },
   { id: "privacy", title: "Privacy & Security", icon: "hand.raised" },
   { id: "passwords", title: "Passwords", icon: "key" },
   { id: "autofill", title: "Autofill", icon: "creditcard" },
@@ -24,16 +25,22 @@ type Section = { section: string; rows: Record<string, Row> };
 const APP = "Ardia";
 
 const ROWS: Record<SettingsPane, Section[]> = {
-  general: [
+  ai: [
     {
       section: "AI",
       rows: {
-        aiProvider: { title: "AI", description: "Which AI Tidy Tabs and Summarize Page use.", keywords: ["ai", "arc max", "tidy tabs", "summarize", "claude", "chatgpt", "ollama", "lm studio", "apple intelligence", "llm"] },
-        aiApple: { title: "Apple Intelligence", description: "Apple's on-device model. Free and private.", keywords: ["on-device", "foundation models", "private"] },
-        aiLocal: { title: "Local model", description: "Ollama or LM Studio on this Mac.", keywords: ["ollama", "lm studio", "local llm", "offline"] },
-        aiClaudeKey: { title: "Claude API key", description: "Uses Claude through the Anthropic API.", keywords: ["anthropic", "api key", "claude"] },
+        provider: { title: "AI", description: "Which AI Tidy Tabs and Summarize Page use.", keywords: ["ai", "arc max", "tidy tabs", "summarize", "claude", "chatgpt", "ollama", "lm studio", "apple intelligence", "llm"] },
+        apple: { title: "Apple Intelligence", description: "Apple's on-device model. Free and private.", keywords: ["on-device", "foundation models", "private"] },
+        local: { title: "Local model", description: "Ollama or LM Studio on this Mac.", keywords: ["ollama", "lm studio", "local llm", "offline"] },
+        claudeKey: { title: "Claude API key", description: "Uses Claude through the Anthropic API.", keywords: ["anthropic", "api key", "claude"] },
+        apiService: { title: "Other AI service", description: "OpenAI, Google Gemini, OpenRouter, Groq, Mistral or any OpenAI-compatible API.", keywords: ["openai", "gpt", "chatgpt", "gemini", "google", "openrouter", "groq", "mistral", "api key", "llm"] },
+        apiBase: { title: "API address", description: "The service's OpenAI-compatible base URL, ending in /v1.", keywords: ["base url", "endpoint", "custom", "together", "fireworks", "deepseek"] },
+        apiKey: { title: "API key", keywords: ["api key", "token", "secret"] },
+        apiModel: { title: "Model", description: "Listed by the service for your key.", keywords: ["model", "gpt", "gemini", "llama"] },
       },
     },
+  ],
+  general: [
     {
       section: "General",
       rows: {

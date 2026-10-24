@@ -10,7 +10,7 @@ const MAX_NAME = 28;
 
 export const TIDY_INSTRUCTIONS =
   "You organise a browser's open tabs into folders, like Arc's Tidy Tabs. Group tabs that belong to the same task, topic or site. " +
-  "Each folder needs at least two tabs and a short, plain name of one to three words in Title Case (for example \"Job Search\", \"Figma Files\", \"Recipes\"). " +
+  "Each folder needs at least two tabs and a short, plain name of one to three words in Title Case, written in the language of the tab titles (for example \"Job Search\", \"Figma Files\", \"Recipes\"). " +
   "Leave tabs that fit nowhere out of every folder. Use between one and six folders. " +
   'Answer with JSON only, no prose: {"folders":[{"name":"...","tabs":[0,3]}]} where the numbers are the tab indexes you were given.';
 

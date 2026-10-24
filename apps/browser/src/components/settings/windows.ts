@@ -13,6 +13,7 @@ export type SettingsPane =
   | "sync"
   | "tabs"
   | "appearance"
+  | "ai"
   | "privacy"
   | "passwords"
   | "autofill"

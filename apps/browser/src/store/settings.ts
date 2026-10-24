@@ -74,7 +74,10 @@ export type Settings = {
   commandBarPlacement: "field" | "centred";
   scrolling: ScrollingMode;
   followSystemAppearance: boolean;
-  aiProvider: "auto" | "apple" | "local" | "claude" | "off";
+  aiProvider: "auto" | "apple" | "local" | "claude" | "api" | "off";
+  aiApiService: "openai" | "gemini" | "openrouter" | "groq" | "mistral" | "custom";
+  aiApiBase: string;
+  aiApiModel: string;
   aiLocalUrl: string;
   aiLocalModel: string;
 
@@ -149,6 +152,9 @@ export const DEFAULT_SETTINGS: Settings = {
   scrolling: "silky",
   followSystemAppearance: true,
   aiProvider: "auto",
+  aiApiService: "openai",
+  aiApiBase: "",
+  aiApiModel: "",
   aiLocalUrl: "http://localhost:11434/v1",
   aiLocalModel: "",
   defaultProfileId: DEFAULT_PROFILE_ID,

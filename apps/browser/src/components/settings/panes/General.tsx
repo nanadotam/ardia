@@ -17,7 +17,6 @@ import { useBrowser } from "../../../store/browser";
 import { useProfiles } from "../../../store/hooks";
 import { engineProfile } from "../../../store/model";
 import { SHARING_COPY } from "../../../telemetry/copy";
-import { AiSection } from "./AiSection";
 import { Anchor, Button, Group, PopUp, Row, SectionHeader, Toggle, useFormColors } from "../controls";
 import { defaultBrowser, downloadSettings, loginItem, updater } from "../paneData";
 import { store, useResource } from "../resources";
@@ -111,7 +110,6 @@ export function GeneralPane() {
           <Button title="Import…" onPress={openImport} />
         </Row>
       </Group>
-      <AiSection />
     </View>
   );
 }

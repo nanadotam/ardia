@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { ask, extractJson, PROVIDER_NAMES } from "../../lib/ai";
+import { ask, extractJson, providerName } from "../../lib/ai";
 import { useBrowser, type BrowserState } from "../../store/browser";
 import { plural } from "../../store/model";
 import { showToast } from "../layout/splitActions";
@@ -30,7 +30,7 @@ async function plan(tabs: TidyTab[]): Promise<{ folders: TidyFolder[]; by: strin
   try {
     const { text, provider } = await ask(TIDY_INSTRUCTIONS, tidyPrompt(tabs), { json: true });
     const folders = foldersFromAnswer(extractJson(text), tabs);
-    if (folders.length) return { folders, by: PROVIDER_NAMES[provider] };
+    if (folders.length) return { folders, by: providerName(provider) };
   } catch {}
   return { folders: foldersBySite(tabs), by: "site" };
 }
