@@ -1,4 +1,7 @@
 import { create } from "zustand";
+import { expectFocus } from "../../lib/focusClaims";
+
+export const TAB_OVERVIEW_FOCUS = "tabOverview";
 
 type TabOverviewState = { open: Record<string, true> };
 
@@ -21,6 +24,7 @@ export function tabOverviewOpen(windowId: string): boolean {
 
 export function openTabOverview(windowId: string) {
   if (tabOverviewOpen(windowId)) return;
+  expectFocus(windowId, TAB_OVERVIEW_FOCUS);
   useTabOverview.setState((s) => ({ open: { ...s.open, [windowId]: true } }));
 }
 

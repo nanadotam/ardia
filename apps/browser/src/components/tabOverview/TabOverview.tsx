@@ -1,8 +1,10 @@
 import { onWindowEvent, Symbol, VisualEffect, watchPinch } from "@ardia/shell";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Easing, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Animated, Easing, findNodeHandle, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useShallow } from "zustand/react/shallow";
 import { closeTab, switchToTab } from "../../lib/actions";
+import { claimFocusTag } from "../../lib/focusClaims";
+import { webviews } from "../../lib/webviews";
 import { lastPicture, rememberPicture, startTabPictures } from "../../lib/tabPictures";
 import { filterOverviewTabs, moveSelection, overviewColumns } from "../../lib/tabOverviewFilter";
 import { useTheme } from "../../lib/theme";
@@ -10,7 +12,7 @@ import { useBrowser } from "../../store/browser";
 import { useWindowId } from "../../store/hooks";
 import { activeTabId, viewTabIds } from "../../store/model";
 import { Favicon, useHover } from "../primitives";
-import { closeTabOverview, openTabOverview, pagePinched, tabOverviewOpen, useTabOverview } from "./state";
+import { closeTabOverview, openTabOverview, pagePinched, TAB_OVERVIEW_FOCUS, tabOverviewOpen, useTabOverview } from "./state";
 
 const GAP = 22;
 const MIN_CARD = 230;
@@ -46,8 +48,10 @@ function TabOverview({ windowId }: { windowId: string }) {
   const theme = useTheme();
   const ids = useBrowser(useShallow((s) => viewTabIds(s, windowId)));
   const active = useBrowser((s) => activeTabId(s, windowId));
-  const tabs = useBrowser(
-    useShallow((s) => ids.map((id) => s.tabs[id]).filter((t) => !!t).map((t) => ({ id: t.id, title: t.title, url: t.url || t.pinnedUrl || "", favicon: t.favicon, profileId: t.profileId }))),
+  const records = useBrowser(useShallow((s) => ids.map((id) => s.tabs[id])));
+  const tabs = useMemo(
+    () => records.filter((t) => !!t).map((t) => ({ id: t.id, title: t.title, url: t.url || t.pinnedUrl || "", favicon: t.favicon, profileId: t.profileId })),
+    [records],
   );
   const [query, setQuery] = useState("");
   const shown = useMemo(() => filterOverviewTabs(tabs, query), [tabs, query]);
@@ -57,7 +61,16 @@ function TabOverview({ windowId }: { windowId: string }) {
   const [selected, setSelected] = useState(() => Math.max(0, tabs.findIndex((t) => t.id === active)));
   const [fresh, setFresh] = useState(0);
   const appear = useRef(new Animated.Value(0)).current;
+  const input = useRef<TextInput>(null);
 
+  useEffect(() => {
+    input.current?.focus();
+    claimFocusTag(windowId, TAB_OVERVIEW_FOCUS, () => findNodeHandle(input.current));
+    return () => {
+      const now = activeTabId(useBrowser.getState(), windowId);
+      if (now) void webviews.get(now)?.focus();
+    };
+  }, []);
   useEffect(() => {
     Animated.timing(appear, { toValue: 1, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
     if (active) void rememberPicture(active).then(() => setFresh((n) => n + 1));
@@ -75,6 +88,7 @@ function TabOverview({ windowId }: { windowId: string }) {
       style={[StyleSheet.absoluteFill, { opacity: appear, transform: [{ scale: appear.interpolate({ inputRange: [0, 1], outputRange: [1.03, 1] }) }] }]}
     >
       <VisualEffect material="fullScreenUI" blendingMode="withinWindow" style={StyleSheet.absoluteFill} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.dark ? "rgba(28,28,30,0.97)" : "rgba(246,246,248,0.97)" }]} />
       <Pressable onPress={() => closeTabOverview(windowId)} style={StyleSheet.absoluteFill} />
       <View style={{ paddingTop: TOP, paddingHorizontal: SIDE, paddingBottom: 18, flexDirection: "row", alignItems: "center", gap: 12 }}>
         <Text style={{ fontSize: 20, fontWeight: "700", color: theme.textPrimary }}>All Tabs</Text>
@@ -94,6 +108,7 @@ function TabOverview({ windowId }: { windowId: string }) {
         >
           <Symbol name="magnifyingglass" size={12} color={theme.textSecondary} style={{ width: 14, height: 14 }} />
           <TextInput
+            ref={input}
             autoFocus
             value={query}
             onChangeText={setQuery}
