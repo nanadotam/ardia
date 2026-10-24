@@ -1,5 +1,5 @@
 import { SwipeArea, type SwipeAreaHandle, type SwipeEvent } from "@ardia/ardiacore";
-import { endLibraryPull, pullLibrary } from "../library/pull";
+import { attachPagerPull, endLibraryPull, endPagerPull, notePagerPull, pullLibrary } from "../library/pull";
 import { openLibrary, useLibrary } from "../library/state";
 import { WindowBackdrop } from "@ardia/shaders";
 import { useEffect, useMemo, useRef, type ReactNode } from "react";
@@ -12,7 +12,6 @@ import { pagerFor, usePagerNativeConfig, usePagerPages, usePagerSurface } from "
 
 
 const LIBRARY_PULL_SPAN = 0.9;
-const RUBBER_FULL_PULL = 0.16;
 
 export function ProfileSwipe({ children }: { children: ReactNode }) {
   return (
@@ -57,18 +56,19 @@ export function ProfileSwipeArea({ surface, style, pageWidth }: { surface: "side
   const pullsFromPager = !!nativePager && !previous && surface === "sidebar" && libraryReachable;
   useEffect(() => {
     if (!pullsFromPager) return;
-    const id = pager.pos.addListener(({ value }) => {
-      if (value < 0) pullLibrary(windowId, -value / RUBBER_FULL_PULL);
-      else pullLibrary(windowId, 0);
-    });
-    return () => pager.pos.removeListener(id);
+    const detach = attachPagerPull(windowId, pager.pos);
+    const id = pager.pos.addListener(({ value }) => notePagerPull(windowId, value));
+    return () => {
+      pager.pos.removeListener(id);
+      detach();
+    };
   }, [pullsFromPager, pager, windowId]);
   const onPagerState = useMemo(
     () =>
       nativePager
         ? (event: Parameters<typeof pager.onNativeState>[0]) => {
             pager.onNativeState(event);
-            if (pullsFromPager && event.phase !== "began") endLibraryPull(windowId);
+            if (pullsFromPager) endPagerPull(windowId, event.phase);
           }
         : undefined,
     [nativePager, pager, pullsFromPager, windowId],

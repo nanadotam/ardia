@@ -44,7 +44,9 @@ export function LibraryHost() {
   const pulling = useLibraryPull((s) => !!s.pulling[windowId]);
   const section = opened ?? (pulling ? "spaces" : undefined);
   const [shown, setShown] = useState(section);
-  const appear = libraryReveal(windowId);
+  const reveal = libraryReveal(windowId);
+  const pagerPull = useLibraryPull((s) => s.sources[windowId]);
+  const appear = useMemo(() => (pagerPull ? Animated.add(reveal, pagerPull).interpolate({ inputRange: [0, 1], outputRange: [0, 1], extrapolate: "clamp" }) : reveal), [reveal, pagerPull]);
   useEffect(() => {
     if (pulling && !opened) {
       setShown("spaces");
@@ -52,17 +54,17 @@ export function LibraryHost() {
     }
     if (section) {
       setShown(section);
-      Animated.timing(appear, { toValue: 1, duration: 280, easing: Easing.bezier(0.2, 0.9, 0.25, 1), useNativeDriver: true }).start();
+      Animated.timing(reveal, { toValue: 1, duration: 280, easing: Easing.bezier(0.2, 0.9, 0.25, 1), useNativeDriver: true }).start();
       return;
     }
-    Animated.timing(appear, { toValue: 0, duration: 200, easing: Easing.bezier(0.4, 0, 0.7, 0.2), useNativeDriver: true }).start(({ finished }) => {
+    Animated.timing(reveal, { toValue: 0, duration: 200, easing: Easing.bezier(0.4, 0, 0.7, 0.2), useNativeDriver: true }).start(({ finished }) => {
       if (finished) setShown(undefined);
     });
   }, [section, pulling]);
   return shown ? <Library windowId={windowId} section={section ?? shown} appear={appear} /> : null;
 }
 
-function Library({ windowId, section, appear }: { windowId: string; section: LibrarySection; appear: Animated.Value }) {
+function Library({ windowId, section, appear }: { windowId: string; section: LibrarySection; appear: Animated.Value | Animated.AnimatedInterpolation<number> }) {
   const theme = useTheme();
   const [query, setQuery] = useState("");
   const search = useRef<TextInput>(null);
@@ -175,6 +177,11 @@ const spacesStep: { current: ((direction: 1 | -1) => void) | null } = { current:
 
 function SpacesSection({ windowId, query }: { windowId: string; query: string }) {
   const theme = useTheme();
+  const [filled, setFilled] = useState(false);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setFilled(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
   const profileIds = useBrowser(useShallow((s) => s.profileOrder.filter((id) => s.profiles[id])));
   const scroller = useRef<ScrollView>(null);
   const [offset, setOffset] = useState(0);
@@ -202,7 +209,7 @@ function SpacesSection({ windowId, query }: { windowId: string; query: string })
         {profileIds.map((id, i) => (
           <PageProfileContext.Provider key={id} value={id}>
             <ThemeScope>
-              <SpaceColumn windowId={windowId} profileId={id} query={query} index={i} />
+              <SpaceColumn windowId={windowId} profileId={id} query={query} index={i} filled={filled} />
             </ThemeScope>
           </PageProfileContext.Provider>
         ))}
@@ -227,7 +234,7 @@ function SpacesSection({ windowId, query }: { windowId: string; query: string })
   );
 }
 
-const SpaceColumn = memo(function SpaceColumn({ windowId, profileId, query, index }: { windowId: string; profileId: string; query: string; index: number }) {
+const SpaceColumn = memo(function SpaceColumn({ windowId, profileId, query, index, filled }: { windowId: string; profileId: string; query: string; index: number; filled: boolean }) {
   const theme = useTheme();
   const name = useBrowser((s) => s.profiles[profileId]?.name ?? "");
   const icon = useBrowser((s) => s.profiles[profileId]?.icon ?? null);
@@ -274,10 +281,10 @@ const SpaceColumn = memo(function SpaceColumn({ windowId, profileId, query, inde
         </Pressable>
       </View>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 6, paddingBottom: 10 }}>
-        {shown.map((t) => (
+        {(filled ? shown : []).map((t) => (
           <TabLine key={t!.id} title={t!.customTitle ?? t!.title} url={t!.url || t!.pinnedUrl || ""} favicon={t!.favicon} profileId={profileId} pinned={!!t!.pinned} onPress={() => go(t!.id)} />
         ))}
-        {!shown.length && <Text style={{ padding: 12, fontSize: 12, color: theme.textSecondary }}>{query ? "No matches" : "No tabs"}</Text>}
+        {filled && !shown.length && <Text style={{ padding: 12, fontSize: 12, color: theme.textSecondary }}>{query ? "No matches" : "No tabs"}</Text>}
       </ScrollView>
     </Animated.View>
   );
