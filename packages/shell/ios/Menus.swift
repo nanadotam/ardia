@@ -499,6 +499,7 @@ enum MainMenu {
       cmd("Show Full URL", "toggleFullUrl"),
       cmd("Show Address Bar in Sidebar", "toggleAddressBar"),
       cmd("Edge to Edge", "toggleEdgeToEdge", "e", [.command, .control]),
+      cmd("Edit Space Theme…", "editTheme"),
       cmd("Cast…", "cast"),
       .separator(),
       cmd("Zoom to Actual Size", "zoomReset", "0"),

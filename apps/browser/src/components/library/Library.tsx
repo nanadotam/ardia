@@ -14,7 +14,7 @@ import { downloadsIn } from "../../store/ui";
 import { DownloadCard } from "../pages/DownloadsPage";
 import { hostLabel, matchesQuery } from "../pages/PageLayout";
 import { Favicon, useHover } from "../primitives";
-import { openSettings } from "../settings/windows";
+import { openThemePanel } from "../theme/ThemePanel";
 import { byDay, closeLibrary, LIBRARY_FOCUS, openLibrary, useLibrary, type LibrarySection } from "./state";
 
 const RAIL = 112;
@@ -168,7 +168,13 @@ const SpaceColumn = memo(function SpaceColumn({ windowId, profileId, query, inde
         <Text numberOfLines={1} style={{ flex: 1, fontSize: 13.5, fontWeight: "700", color: theme.textPrimary }}>
           {name}
         </Text>
-        <Pressable onPress={() => openSettings("profiles", profileId)} tooltip="Edit Space and Theme">
+        <Pressable
+          onPress={() => {
+            closeLibrary(windowId);
+            openThemePanel(windowId, profileId);
+          }}
+          tooltip="Edit Theme"
+        >
           <Symbol name="paintbrush.pointed" size={13} color={theme.textSecondary} style={{ width: 18, height: 18 }} />
         </Pressable>
       </View>

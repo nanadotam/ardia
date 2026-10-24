@@ -42,6 +42,7 @@ export type BrowserCommand =
   | "toggleEdgeToEdge"
   | "tabOverview"
   | "library"
+  | "editTheme"
   | "cast"
   | "zoomReset"
   | "zoomIn"

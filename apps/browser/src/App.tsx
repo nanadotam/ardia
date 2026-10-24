@@ -22,6 +22,7 @@ import { LittleArdiaWindow } from "./components/littleArdia/LittleArdiaWindow";
 import { SidebarOverlays } from "./components/sidebar/Overlays";
 import { TabOverviewHost } from "./components/tabOverview/TabOverview";
 import { LibraryHost } from "./components/library/Library";
+import { ThemePanelHost } from "./components/theme/ThemePanel";
 import { layout, ThemeScope, useTheme } from "./lib/theme";
 import { useBrowser } from "./store/browser";
 import { useWindowId, WindowContext } from "./store/hooks";
@@ -95,6 +96,7 @@ function BrowserWindow() {
       <CreateProfileHost />
       <SidebarOverlays windowWidth={width} />
       <LibraryHost />
+      <ThemePanelHost />
       <TabOverviewHost />
       <OnboardingOverlay />
     </View>

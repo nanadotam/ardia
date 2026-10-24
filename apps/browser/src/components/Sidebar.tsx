@@ -1,5 +1,6 @@
 import { ContextMenuArea, FadeLabel, Symbol, WindowDragRegion } from "@ardia/shell";
 import { toggleLibrary } from "./library/state";
+import { toggleThemePanel } from "./theme/ThemePanel";
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Animated, Pressable, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { switchOn } from "../lib/killSwitches";
@@ -156,7 +157,7 @@ export function Sidebar({ width }: { width: number }) {
                 </View>
               ) : null}
               {footerDownloads ? (
-                <View style={{ position: "absolute", left: layout.sidebarInset + (incognito ? 0 : SIDEBAR_FOOTER_DOWNLOADS.size + 2), bottom: SIDEBAR_FOOTER_DOWNLOADS.bottom }}>
+                <View style={{ position: "absolute", left: layout.sidebarInset + (incognito ? 0 : 2 * (SIDEBAR_FOOTER_DOWNLOADS.size + 2)), bottom: SIDEBAR_FOOTER_DOWNLOADS.bottom }}>
                   <DownloadsButton windowId={windowId} />
                 </View>
               ) : null}
@@ -528,7 +529,12 @@ function useRevealTabs(windowId: string, scroll: RefObject<ScrollView | null>, s
 }
 
 function LibraryButton({ windowId }: { windowId: string }) {
-  return <IconButton icon="books.vertical" size={16} box={34} radius={10} tooltip="Library (⌃⌘L)" onPress={() => toggleLibrary(windowId)} />;
+  return (
+    <View style={{ flexDirection: "row", gap: 2 }}>
+      <IconButton icon="books.vertical" size={16} box={34} radius={10} tooltip="Library (⌃⌘L)" onPress={() => toggleLibrary(windowId)} />
+      <IconButton icon="paintpalette" size={16} box={34} radius={10} tooltip="Edit Space Theme" onPress={() => toggleThemePanel(windowId)} />
+    </View>
+  );
 }
 
 function DownloadsButton({ windowId }: { windowId: string }) {
