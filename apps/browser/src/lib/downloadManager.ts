@@ -67,3 +67,26 @@ export function summarize(downloads: Download[]): DownloadsSummary {
   const secondsLeft = speed > 0 && total > received && sized.length === active.length ? (total - received) / speed : null;
   return { active: active.length, running: running.length, paused: active.length - running.length, failed: downloads.filter(failedOrStopped).length, speed, received, total, secondsLeft };
 }
+
+export const RESUME_CHECK_MS = 1500;
+
+export type RetrySteps = {
+  resume: (id: string) => Promise<unknown>;
+  downloadAgain: (url: string) => void;
+  current: (id: string) => Pick<Download, "state" | "paused"> | undefined;
+  wait: (ms: number) => Promise<void>;
+};
+
+export async function retryWith(d: Pick<Download, "id" | "url" | "state">, steps: RetrySteps): Promise<"resumed" | "again" | "gone"> {
+  if (d.state === "cancelled") {
+    steps.downloadAgain(d.url);
+    return "again";
+  }
+  await steps.resume(d.id).catch(() => {});
+  await steps.wait(RESUME_CHECK_MS);
+  const now = steps.current(d.id);
+  if (!now) return "gone";
+  if (now.state === "downloading" || now.state === "finished") return "resumed";
+  steps.downloadAgain(d.url);
+  return "again";
+}

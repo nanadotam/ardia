@@ -29,3 +29,42 @@ test("the summary adds up running speed and gives one time left only when every 
   assert.equal(s.secondsLeft, (220 - 60) / 25);
   assert.equal(summarize([dl({ speed: 5 })]).secondsLeft, null);
 });
+
+const { retryWith } = await import("./downloadManager.ts");
+
+function steps(after, { throws = false } = {}) {
+  const log = [];
+  return {
+    log,
+    steps: {
+      resume: async (id) => {
+        log.push(["resume", id]);
+        if (throws) throw new Error("engine said no");
+      },
+      downloadAgain: (url) => log.push(["again", url]),
+      current: () => after,
+      wait: async () => {},
+    },
+  };
+}
+
+test("a cancelled download can't resume, so Retry downloads it again without asking the engine", async () => {
+  const { log, steps: s } = steps(undefined);
+  assert.equal(await retryWith(dl({ id: "c", state: "cancelled", url: "https://x.example/f" }), s), "again");
+  assert.deepEqual(log, [["again", "https://x.example/f"]]);
+});
+
+test("a failed download that resumes is left alone; one Chromium won't resume is downloaded again", async () => {
+  const resumed = steps({ state: "downloading", paused: false });
+  assert.equal(await retryWith(dl({ state: "failed" }), resumed.steps), "resumed");
+  assert.deepEqual(resumed.log.map((l) => l[0]), ["resume"]);
+  const refused = steps({ state: "failed", paused: false }, { throws: true });
+  assert.equal(await retryWith(dl({ state: "failed" }), refused.steps), "again");
+  assert.deepEqual(refused.log.map((l) => l[0]), ["resume", "again"]);
+});
+
+test("a download removed from the list while Retry waited isn't downloaded again", async () => {
+  const gone = steps(undefined);
+  assert.equal(await retryWith(dl({ state: "failed" }), gone.steps), "gone");
+  assert.deepEqual(gone.log.map((l) => l[0]), ["resume"]);
+});

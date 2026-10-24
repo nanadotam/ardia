@@ -1,17 +1,14 @@
 import { pauseDownload, resumeDownload, type Download } from "@ardia/ardiacore";
+import { retryDownload } from "../../lib/downloadRetry";
 import { Symbol } from "@ardia/shell";
 import { useMemo } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { DOWNLOAD_FILTERS, failedOrStopped, filterCounts, summarize, type DownloadFilter } from "../../lib/downloadManager";
 import { useTheme } from "../../lib/theme";
-import { openUrl } from "../bookmarks/actions";
 import { formatBytes, formatDuration } from "../Downloads";
 import { Button, useFormColors } from "../settings/controls";
 
-export function retryDownload(d: Download, windowId: string) {
-  resumeDownload(d.id).catch(() => openUrl(d.url, windowId, "background"));
-}
-
+export { retryDownload } from "../../lib/downloadRetry";
 export function DownloadManagerBar({
   downloads,
   windowId,

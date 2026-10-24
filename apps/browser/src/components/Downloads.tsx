@@ -10,7 +10,7 @@ import { downloadsIn, downloadVisibleIn } from "../store/ui";
 import { SIDEBAR_FOOTER_DOWNLOADS, useAddressBarInSidebar, useTabLayout } from "./layout/windowLayout";
 import { PROFILE_DOTS_HEIGHT } from "./profiles/ProfileDots";
 import { openInternalPage } from "./pages/urls";
-import { openUrl } from "./bookmarks/actions";
+import { retryDownload } from "../lib/downloadRetry";
 import { useSidebarWidth } from "./sidebar/tokens";
 import { HoverSlot } from "./HoverSlot";
 import { PANEL, POPOVER_MOTION, PopoverSeparator, usePopoverPresence } from "./layout/controls";
@@ -86,7 +86,7 @@ export async function downloadMenu(d: Download, windowId: string) {
   if (choice === "pause") void pauseDownload(d.id);
   if (choice === "resume") void resumeDownload(d.id);
   if (choice === "cancel") void cancelDownload(d.id);
-  if (choice === "retry") resumeDownload(d.id).catch(() => openUrl(d.url, windowId, "background"));
+  if (choice === "retry") retryDownload(d, windowId);
   if (choice === "open") void openFile(d.path);
   if (choice === "reveal") void revealFile(d.path);
   if (choice === "copy") copyText(d.url);
