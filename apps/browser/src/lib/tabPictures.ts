@@ -19,6 +19,7 @@ export function rememberPicture(tabId: string): Promise<void> {
 }
 
 function remember(tabId: string): Promise<void> {
+  if (isIncognitoProfile(useBrowser.getState().tabs[tabId]?.profileId ?? "")) return Promise.resolve();
   const view = webviews.get(tabId);
   if (!view) return Promise.resolve();
   return view
