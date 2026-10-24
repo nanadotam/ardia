@@ -71,3 +71,41 @@ test("an import skips open tabs whose page is already open in the profile, and r
   assert.equal(importTabs(P, open, null), 0, "a second import adds nothing");
   assert.deepEqual(urls(), ["https://a.example/", "https://home.example/"]);
 });
+
+test("an Arc favorite imports even when the same page sits in a pinned folder or a pinned row, but not twice as a tile", () => {
+  S().hydrate({});
+  const w = S().createWindow({ url: "https://home.example/" });
+  const grouped = S().newTab(w, { url: "https://www.youtube.com/", profileId: P });
+  const g = S().createGroup([grouped]);
+  S().updateGroup(g, { pinned: true });
+  const row = S().newTab(w, { url: "https://row.example/", profileId: P });
+  S().pinTabs([row], true);
+  S().updateTab(row, { pinnedAsRow: true });
+  const favorites = [
+    { url: "https://www.youtube.com/", title: "YouTube", pinned: true },
+    { url: "https://row.example/", title: "Row", pinned: true },
+  ];
+  assert.equal(importTabs(P, favorites, null, "tiles"), 2);
+  assert.equal(importTabs(P, favorites, null, "tiles"), 0, "a second import adds no tile");
+  assert.equal(importTabs(P, favorites, null), 0, "pinned rows still skip pages pinned anywhere");
+});
+
+test("Arc's own shortcuts come along unless Ardia already has one for that command", async () => {
+  const { importArcShortcuts } = await import("../components/import/apply.ts");
+  S().hydrate({});
+  S().createWindow({ url: "https://home.example/" });
+  assert.equal(importArcShortcuts([{ action: "showSidebar", key: "\\", modifiers: ["command"] }, { action: "unknownArcThing", key: "k", modifiers: ["command"] }]), 1);
+  assert.deepEqual(S().settings.shortcuts.toggleSidebar, ["\\", "command"]);
+  S().updateSettings({ shortcuts: { toggleSidebar: ["s", "command", "option"] } });
+  assert.equal(importArcShortcuts([{ action: "showSidebar", key: "\\", modifiers: ["command"] }]), 0, "a choice made in Ardia wins");
+});
+
+test("Install All asks the engine for each imported extension in turn and carries on past a failure", async () => {
+  const stub = await import("@ardia/ardiacore");
+  const { installAllFromWebStore } = await import("../components/import/apply.ts");
+  stub.webStoreInstalls.length = 0;
+  const seen = [];
+  await installAllFromWebStore(P, ["a".repeat(32), "b".repeat(32)], (id, outcome) => seen.push([id, outcome]));
+  assert.deepEqual(stub.webStoreInstalls.map((x) => x.id), ["a".repeat(32), "b".repeat(32)]);
+  assert.deepEqual(seen, [["a".repeat(32), "installed"], ["b".repeat(32), "installed"]]);
+});

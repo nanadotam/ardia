@@ -17,7 +17,7 @@ import { useBrowser } from "../../store/browser";
 import { Favicon, useHover } from "../primitives";
 import { openImport } from "../settings/windows";
 import { PERSONALIZE_COPY, TabLayoutPicker, ThemeColorPicker } from "./personalize";
-import { PINNABLE_SITES, pinSites, preselectedSites } from "./sites";
+import { PINNABLE_SITES, pinnedHosts, pinSites, preselectedSites } from "./sites";
 import { finishOnboarding, recordDefaultBrowserTrial, useOnboarding } from "./state";
 import { CheckMark, CheckRow, PrimaryButton, Reveal, SecondaryButton, StepProgress, StepTitle, useOnboardingColors } from "./ui";
 
@@ -314,7 +314,7 @@ export function PinnedTabsStep() {
   const next = useOnboarding((s) => s.next);
   const windowId = useOnboarding((s) => s.windowId);
   const history = useBrowser((s) => s.history[s.windows[windowId ?? ""]?.profileId ?? ""]);
-  const initial = useMemo(() => preselectedSites(history ?? []), []);
+  const initial = useMemo(() => preselectedSites(history ?? [], windowId ? pinnedHosts(windowId) : undefined), []);
   const [selected, setSelected] = useState<string[]>(initial);
 
   const toggle = (id: string) => setSelected((list) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]));

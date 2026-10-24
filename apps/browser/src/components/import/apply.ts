@@ -1,11 +1,11 @@
-import { savePassword } from "@ardia/ardiacore";
-import type { BookmarkNode as ImportedNode, Credential, DiaTabsProfile, ImportedTab, ImportKind, ImportResult, SafariExport, SpaceSuggestion } from "@ardia/import";
+import { installFromWebStore, savePassword } from "@ardia/ardiacore";
+import type { BookmarkNode as ImportedNode, Credential, DiaTabsProfile, ImportedShortcut, ImportedTab, ImportKind, ImportResult, SafariExport, SpaceSuggestion } from "@ardia/import";
 import { addGroupsFromDrafts } from "../../lib/bookmarkGroups";
 import type { BookmarkDraft } from "../../store/bookmarks";
 import type { GroupDraft } from "../../store/draftGroups";
 import { useBrowser } from "../../store/browser";
 import { engineProfile, isIncognitoProfile } from "../../store/model";
-import { openPages, pageKey, pinnedPages } from "../../store/pageKeys";
+import { openPages, pageKey, pinnedPages, tilePages } from "../../store/pageKeys";
 import { withNewTab } from "../../store/tabs";
 import type { ProfileColor } from "../../store/types";
 import { importModule } from "./module";
@@ -118,6 +118,22 @@ function windowFor(profileId: string): string {
   return regular ?? s.createWindow({ profileId });
 }
 
+export async function installAllFromWebStore(
+  profileId: string,
+  ids: string[],
+  onEach: (id: string, outcome: "installed" | "failed", error?: string) => void,
+): Promise<void> {
+  const engine = engineProfile(profileId);
+  for (const id of ids) {
+    try {
+      await installFromWebStore(id, engine);
+      onEach(id, "installed");
+    } catch (e) {
+      onEach(id, "failed", e instanceof Error ? e.message : String(e));
+    }
+  }
+}
+
 export function openInWebStore(profileId: string, urls: string[]) {
   if (!urls.length) return;
   const windowId = windowFor(profileId);
@@ -128,9 +144,10 @@ export function importTabs(
   profileId: string,
   tabs: (Pick<ImportedTab, "url" | "title" | "pinned" | "customTitle"> & { row?: boolean })[],
   group: string | null,
+  pinnedAgainst: "anyPin" | "tiles" = "anyPin",
 ): number {
   const s = useBrowser.getState();
-  const pinned = pinnedPages(s, profileId);
+  const pinned = pinnedAgainst === "tiles" ? tilePages(s, profileId) : pinnedPages(s, profileId);
   const open = openPages(s, profileId);
   const usable = tabs.filter((t) => {
     if (!/^(https?|file):/i.test(t.url)) return false;
@@ -193,6 +210,22 @@ export function importDiaProfile(profileId: string, profile: DiaTabsProfile, wha
   return n;
 }
 
+const ARC_SHORTCUT_COMMANDS: Record<string, string> = { showSidebar: "toggleSidebar" };
+
+export function importArcShortcuts(shortcuts: readonly ImportedShortcut[]): number {
+  const current = useBrowser.getState().settings.shortcuts;
+  const next = { ...current };
+  let added = 0;
+  for (const s of shortcuts) {
+    const command = ARC_SHORTCUT_COMMANDS[s.action];
+    if (!command || next[command]) continue;
+    next[command] = [s.key, ...s.modifiers];
+    added++;
+  }
+  if (added) useBrowser.getState().updateSettings({ shortcuts: next });
+  return added;
+}
+
 export async function applyResult(
   profileId: string,
   result: ImportResult,
@@ -204,7 +237,8 @@ export async function applyResult(
   if (result.history.length) counts.history += importHistory(profileId, result.history);
   Object.assign(counts, await importNative(profileId, result.vaultToken, ["cookies", "autofill"], onFailed));
   if (result.tabs.length && !result.spaces.length) counts.tabs += importTabs(profileId, result.tabs, "Imported");
-  if (result.favorites.length) counts.tabs += importTabs(profileId, result.favorites.map((t) => ({ ...t, pinned: true })), null);
+  if (result.favorites.length) counts.tabs += importTabs(profileId, result.favorites.map((t) => ({ ...t, pinned: true })), null, "tiles");
+  if (result.shortcuts?.length) importArcShortcuts(result.shortcuts);
   if (result.credentials.length) counts.passwords += await importPasswords(profileId, result.credentials);
   return counts;
 }
