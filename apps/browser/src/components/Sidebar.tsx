@@ -1,6 +1,6 @@
 import { ContextMenuArea, FadeLabel, Symbol, WindowDragRegion } from "@ardia/shell";
 import { toggleLibrary } from "./library/state";
-import { toggleThemePanel } from "./theme/ThemePanel";
+import { toggleThemePanel, useThemePanel } from "./theme/ThemePanel";
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Animated, Pressable, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { switchOn } from "../lib/killSwitches";
@@ -150,17 +150,20 @@ export function Sidebar({ width }: { width: number }) {
 
           {footer ? (
             <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: footer }}>
-              {dots ? <ProfileDots windowId={windowId} /> : null}
+              {dots ? (
+                <View style={{ position: "absolute", left: FOOTER_SIDE, right: FOOTER_SIDE + (footerDownloads ? SIDEBAR_FOOTER_DOWNLOADS.size + 2 : 0), top: 0 }}>
+                  <ProfileDots windowId={windowId} />
+                </View>
+              ) : null}
               {!incognito ? (
                 <View style={{ position: "absolute", left: layout.sidebarInset, bottom: SIDEBAR_FOOTER_DOWNLOADS.bottom }}>
-                  <LibraryButton windowId={windowId} />
+                  <IconButton icon="books.vertical" size={16} box={SIDEBAR_FOOTER_DOWNLOADS.size} radius={10} tooltip="Library (⌃⌘L)" onPress={() => toggleLibrary(windowId)} />
                 </View>
               ) : null}
-              {footerDownloads ? (
-                <View style={{ position: "absolute", left: layout.sidebarInset + (incognito ? 0 : 2 * (SIDEBAR_FOOTER_DOWNLOADS.size + 2)), bottom: SIDEBAR_FOOTER_DOWNLOADS.bottom }}>
-                  <DownloadsButton windowId={windowId} />
-                </View>
-              ) : null}
+              <View style={{ position: "absolute", right: layout.sidebarInset, bottom: SIDEBAR_FOOTER_DOWNLOADS.bottom, flexDirection: "row", gap: 2 }}>
+                {footerDownloads ? <DownloadsButton windowId={windowId} /> : null}
+                {!incognito ? <ThemeButton windowId={windowId} /> : null}
+              </View>
             </View>
           ) : null}
 
@@ -528,11 +531,47 @@ function useRevealTabs(windowId: string, scroll: RefObject<ScrollView | null>, s
   }, [windowId]);
 }
 
-function LibraryButton({ windowId }: { windowId: string }) {
+const FOOTER_SIDE = layout.sidebarInset + SIDEBAR_FOOTER_DOWNLOADS.size + 4;
+
+function ThemeButton({ windowId }: { windowId: string }) {
+  const theme = useTheme();
+  const { hovered, hoverProps } = useHover();
+  const open = useThemePanel((s) => !!s.open[windowId]);
+  const accent = theme.powerUpColor ?? theme.accent;
+  const palette = theme.powerUpPalette ?? [];
+  const colors = palette.length > 1 ? palette.slice(0, 2) : [accent, accent];
+  const box = SIDEBAR_FOOTER_DOWNLOADS.size;
   return (
-    <View style={{ flexDirection: "row", gap: 2 }}>
-      <IconButton icon="books.vertical" size={16} box={34} radius={10} tooltip="Library (⌃⌘L)" onPress={() => toggleLibrary(windowId)} />
-      <IconButton icon="paintpalette" size={16} box={34} radius={10} tooltip="Edit Space Theme" onPress={() => toggleThemePanel(windowId)} />
+    <View tooltip="Edit Space Theme" {...hoverProps}>
+      <Pressable onPress={() => toggleThemePanel(windowId)}>
+        {({ pressed }) => (
+          <View
+            style={{
+              width: box,
+              height: box,
+              borderRadius: 10,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: pressed ? theme.toolbarPressed : hovered || open ? theme.toolbarHover : undefined,
+            }}
+          >
+            <View
+              style={{
+                width: 16,
+                height: 16,
+                borderRadius: 8,
+                overflow: "hidden",
+                flexDirection: "row",
+                borderWidth: 1.5,
+                borderColor: theme.dark ? "rgba(255,255,255,0.55)" : "rgba(0,0,0,0.35)",
+              }}
+            >
+              <View style={{ flex: 1, backgroundColor: colors[0] }} />
+              <View style={{ flex: 1, backgroundColor: colors[1] }} />
+            </View>
+          </View>
+        )}
+      </Pressable>
     </View>
   );
 }

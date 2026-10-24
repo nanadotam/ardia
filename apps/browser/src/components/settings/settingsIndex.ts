@@ -191,7 +191,14 @@ const ROWS: Record<SettingsPane, Section[]> = {
   appearance: [
     {
       section: "Appearance Theme",
-      rows: { theme: { title: "Appearance Theme", description: "Also in View › Appearance. Incognito windows are always dark.", keywords: ["dark mode", "light mode", "automatic", "night", "system"] } },
+      rows: {
+        theme: { title: "Appearance Theme", description: "Also in View › Appearance. Incognito windows are always dark.", keywords: ["dark mode", "light mode", "automatic", "night", "system"] },
+        followSystemAppearance: {
+          title: "Spaces follow this appearance",
+          description: "Every space, the new tab page, the tab overview and the command bar go light or dark with this choice, even when a space's own theme (like one imported from Arc) says light.",
+          keywords: ["space theme", "arc theme", "follow system", "night"],
+        },
+      },
     },
     {
       section: "Address Bar",

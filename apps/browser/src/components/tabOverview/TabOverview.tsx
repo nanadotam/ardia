@@ -4,6 +4,7 @@ import { Animated, Easing, findNodeHandle, Image, Pressable, ScrollView, StyleSh
 import { useShallow } from "zustand/react/shallow";
 import { closeTab, switchToTab } from "../../lib/actions";
 import { claimFocusTag } from "../../lib/focusClaims";
+import { ThemeTint } from "../theme/ThemeTint";
 import { lastPicture, rememberPicture, startTabPictures } from "../../lib/tabPictures";
 import { moveSelection, overviewColumns } from "../../lib/tabOverviewFilter";
 import { useTheme } from "../../lib/theme";
@@ -102,7 +103,7 @@ function TabOverview({ windowId }: { windowId: string }) {
   return (
     <Animated.View onLayout={(e) => setWidth(e.nativeEvent.layout.width)} style={[StyleSheet.absoluteFill, { opacity: reveal }]}>
       <VisualEffect material="fullScreenUI" blendingMode="withinWindow" style={StyleSheet.absoluteFill} />
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.dark ? "rgba(28,28,30,1)" : "rgba(246,246,248,1)" }]} />
+      <ThemeTint colors={theme.windowTint} accent={theme.profileColor === "incognito" ? null : theme.accent} />
       <Pressable onPress={() => closeTabOverview(windowId)} style={StyleSheet.absoluteFill} />
       <Animated.View
         style={{

@@ -1,4 +1,5 @@
 import { WebView, type OpenWindowRequest } from "@ardia/ardiacore";
+import { WindowDragRegion } from "@ardia/shell";
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Animated, StyleSheet, View, type ViewStyle } from "react-native";
 import { useShallow } from "zustand/react/shallow";
@@ -66,6 +67,8 @@ import { closeLittleArdiaOnEscape } from "./littleArdia/actions";
 import { PeekOverlay } from "./peek/PeekOverlay";
 import { notePinchScale } from "./tabOverview/state";
 import { closePeekOnEscape, dismissPeek, startPeeks } from "./peek/actions";
+
+const PAGE_DRAG_STRIP = 10;
 
 export function ContentCard() {
   const windowId = useWindowId();
@@ -291,6 +294,9 @@ export function ContentCard() {
             />
           );
         })}
+      {size.width > 0 && noToolbar && !small && !fullscreenTab ? (
+        <WindowDragRegion titleBarDoubleClick style={{ position: "absolute", left: 0, right: 0, top: 0, height: PAGE_DRAG_STRIP }} />
+      ) : null}
       {size.width > 0 && windowToolbar && activeId && panes[activeId] && (
         <WindowToolbar windowId={windowId} tabId={activeId} geometry={geometryFor(panes[activeId])} autoHide={hideWhileScrolling} />
       )}

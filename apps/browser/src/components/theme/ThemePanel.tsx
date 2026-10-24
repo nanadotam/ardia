@@ -1,6 +1,6 @@
 import { OutsidePressArea, Surface, Symbol, VisualEffect } from "@ardia/shell";
-import { useEffect, useRef } from "react";
-import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { create } from "zustand";
 import { layout, useTheme } from "../../lib/theme";
 import { useBrowser } from "../../store/browser";
@@ -35,18 +35,27 @@ const RADIUS = 18;
 export function ThemePanelHost() {
   const windowId = useWindowId();
   const profileId = useThemePanel((s) => s.open[windowId]);
-  return profileId ? <ThemePanel windowId={windowId} profileId={profileId} /> : null;
+  const [shown, setShown] = useState(profileId);
+  const appear = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (profileId) {
+      setShown(profileId);
+      Animated.spring(appear, { toValue: 1, speed: 22, bounciness: 5, useNativeDriver: true }).start();
+      return;
+    }
+    Animated.timing(appear, { toValue: 0, duration: 160, easing: Easing.in(Easing.cubic), useNativeDriver: true }).start(({ finished }) => {
+      if (finished) setShown(undefined);
+    });
+  }, [profileId]);
+  const target = profileId ?? shown;
+  return target ? <ThemePanel windowId={windowId} profileId={target} appear={appear} /> : null;
 }
 
-function ThemePanel({ windowId, profileId }: { windowId: string; profileId: string }) {
+function ThemePanel({ windowId, profileId, appear }: { windowId: string; profileId: string; appear: Animated.Value }) {
   const theme = useTheme();
   const name = useBrowser((s) => s.profiles[profileId]?.name ?? "");
   const sidebarOpen = useBrowser((s) => !!s.windows[windowId]?.sidebarOpen);
   const sidebarWidth = useBrowser((s) => s.settings.sidebarWidth ?? layout.sidebarWidth);
-  const appear = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.spring(appear, { toValue: 1, speed: 22, bounciness: 6, useNativeDriver: true }).start();
-  }, []);
   const close = () => closeThemePanel(windowId);
   return (
     <Animated.View

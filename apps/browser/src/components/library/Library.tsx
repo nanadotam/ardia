@@ -12,15 +12,19 @@ import { cleanedTabsFor } from "../../store/organize";
 import type { ClosedTab } from "../../store/types";
 import { downloadsIn } from "../../store/ui";
 import { DownloadCard } from "../pages/DownloadsPage";
+import { ThemeTint } from "../theme/ThemeTint";
 import { DownloadManagerBar } from "../downloads/DownloadManager";
 import { matchesFilter, type DownloadFilter } from "../../lib/downloadManager";
 import { hostLabel, matchesQuery } from "../pages/PageLayout";
-import { Favicon, useHover } from "../primitives";
+import { Favicon, IconButton, useHover } from "../primitives";
 import { openThemePanel } from "../theme/ThemePanel";
 import { byDay, closeLibrary, LIBRARY_FOCUS, openLibrary, useLibrary, type LibrarySection } from "./state";
 
 const RAIL = 112;
+const SHEET_INSET = 14;
+const SHEET_TOP = 40;
 const COLUMN = 262;
+const SPACE_GAP = 18;
 const SECTIONS: { id: LibrarySection; title: string; icon: string }[] = [
   { id: "spaces", title: "Spaces", icon: "square.on.square" },
   { id: "archive", title: "Archived Tabs", icon: "archivebox" },
@@ -33,16 +37,31 @@ const VIDEO = /\.(mp4|mov|m4v|webm|mkv|avi)$/i;
 export function LibraryHost() {
   const windowId = useWindowId();
   const section = useLibrary((s) => s.open[windowId]);
-  return section ? <Library windowId={windowId} section={section} /> : null;
+  const [shown, setShown] = useState(section);
+  const appear = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (section) {
+      setShown(section);
+      Animated.timing(appear, { toValue: 1, duration: 280, easing: Easing.bezier(0.2, 0.9, 0.25, 1), useNativeDriver: true }).start();
+      return;
+    }
+    Animated.timing(appear, { toValue: 0, duration: 200, easing: Easing.bezier(0.4, 0, 0.7, 0.2), useNativeDriver: true }).start(({ finished }) => {
+      if (finished) setShown(undefined);
+    });
+  }, [section]);
+  return shown ? <Library windowId={windowId} section={section ?? shown} appear={appear} /> : null;
 }
 
-function Library({ windowId, section }: { windowId: string; section: LibrarySection }) {
+function Library({ windowId, section, appear }: { windowId: string; section: LibrarySection; appear: Animated.Value }) {
   const theme = useTheme();
-  const appear = useRef(new Animated.Value(0)).current;
   const [query, setQuery] = useState("");
   const search = useRef<TextInput>(null);
+  const sectionFade = useRef(new Animated.Value(1)).current;
   useEffect(() => {
-    Animated.timing(appear, { toValue: 1, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+    sectionFade.setValue(0);
+    Animated.timing(sectionFade, { toValue: 1, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, [section]);
+  useEffect(() => {
     search.current?.focus();
     claimFocusTag(windowId, LIBRARY_FOCUS, () => findNodeHandle(search.current));
     return () => {
@@ -53,16 +72,32 @@ function Library({ windowId, section }: { windowId: string; section: LibrarySect
   useEffect(() => setQuery(""), [section]);
 
   return (
+    <View style={StyleSheet.absoluteFill}>
+      <Animated.View style={[StyleSheet.absoluteFill, { opacity: appear }]}>
+        <Pressable onPress={() => closeLibrary(windowId)} style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.32)" }]} />
+      </Animated.View>
     <Animated.View
-      style={[
-        StyleSheet.absoluteFill,
-        { opacity: appear, transform: [{ translateX: appear.interpolate({ inputRange: [0, 1], outputRange: [-24, 0] }) }] },
-      ]}
+      style={{
+        position: "absolute",
+        left: SHEET_INSET,
+        right: SHEET_INSET,
+        top: SHEET_TOP,
+        bottom: SHEET_INSET,
+        borderRadius: 16,
+        overflow: "hidden",
+        borderWidth: StyleSheet.hairlineWidth * 2,
+        borderColor: theme.panelBorder,
+        opacity: appear,
+        transform: [
+          { translateY: appear.interpolate({ inputRange: [0, 1], outputRange: [18, 0] }) },
+          { scale: appear.interpolate({ inputRange: [0, 1], outputRange: [0.975, 1] }) },
+        ],
+      }}
     >
       <VisualEffect material="sidebar" blendingMode="withinWindow" style={StyleSheet.absoluteFill} />
       <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.dark ? "rgba(30,30,32,1)" : "rgba(244,242,240,1)" }]} />
       <View style={{ flex: 1, flexDirection: "row" }}>
-        <View style={{ width: RAIL, paddingTop: 72, alignItems: "center", gap: 6 }}>
+        <View style={{ width: RAIL, paddingTop: 56, alignItems: "center", gap: 6 }}>
           {SECTIONS.map((s) => (
             <RailButton key={s.id} title={s.title} icon={s.icon} selected={s.id === section} onPress={() => openLibrary(windowId, s.id)} />
           ))}
@@ -70,7 +105,7 @@ function Library({ windowId, section }: { windowId: string; section: LibrarySect
           <RailButton title="Back" icon="arrow.left" selected={false} onPress={() => closeLibrary(windowId)} />
           <View style={{ height: 16 }} />
         </View>
-        <View style={{ flex: 1, paddingTop: 44 }}>
+        <View style={{ flex: 1, paddingTop: 28 }}>
           <View style={{ height: 40, flexDirection: "row", alignItems: "center", paddingRight: 24, gap: 12 }}>
             <Text style={{ fontSize: 22, fontWeight: "700", color: theme.textPrimary }}>{SECTIONS.find((s) => s.id === section)!.title}</Text>
             <View style={{ flex: 1 }} />
@@ -84,9 +119,14 @@ function Library({ windowId, section }: { windowId: string; section: LibrarySect
                 placeholderTextColor={theme.placeholder}
                 selectionColor={theme.selection}
                 enableFocusRing={false}
-                keyDownEvents={[{ key: "Escape" }]}
+                keyDownEvents={!query && section === "spaces" ? [{ key: "Escape" }, { key: "ArrowLeft" }, { key: "ArrowRight" }] : [{ key: "Escape" }]}
                 onKeyDown={(e) => {
-                  if (e.nativeEvent.key !== "Escape") return;
+                  const key = e.nativeEvent.key;
+                  if (key === "ArrowLeft" || key === "ArrowRight") {
+                    if (!query && section === "spaces") spacesStep.current?.(key === "ArrowRight" ? 1 : -1);
+                    return;
+                  }
+                  if (key !== "Escape") return;
                   if (query) setQuery("");
                   else closeLibrary(windowId);
                 }}
@@ -94,15 +134,16 @@ function Library({ windowId, section }: { windowId: string; section: LibrarySect
               />
             </View>
           </View>
-          <View style={{ flex: 1, marginTop: 14 }}>
+          <Animated.View style={{ flex: 1, marginTop: 14, opacity: sectionFade, transform: [{ translateY: sectionFade.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }] }}>
             {section === "spaces" && <SpacesSection windowId={windowId} query={query} />}
             {section === "archive" && <ArchiveSection windowId={windowId} query={query} />}
             {section === "downloads" && <DownloadsSection windowId={windowId} query={query} />}
             {section === "media" && <MediaSection windowId={windowId} query={query} />}
-          </View>
+          </Animated.View>
         </View>
       </View>
     </Animated.View>
+    </View>
   );
 }
 
@@ -119,18 +160,59 @@ function RailButton({ title, icon, selected, onPress }: { title: string; icon: s
   );
 }
 
+const spacesStep: { current: ((direction: 1 | -1) => void) | null } = { current: null };
+
 function SpacesSection({ windowId, query }: { windowId: string; query: string }) {
+  const theme = useTheme();
   const profileIds = useBrowser(useShallow((s) => s.profileOrder.filter((id) => s.profiles[id])));
+  const scroller = useRef<ScrollView>(null);
+  const [offset, setOffset] = useState(0);
+  const [viewport, setViewport] = useState(0);
+  const step = COLUMN + SPACE_GAP;
+  const content = profileIds.length * step - SPACE_GAP + 24;
+  const maxOffset = Math.max(0, content - viewport);
+  const perPage = Math.max(1, Math.floor((viewport + SPACE_GAP) / step));
+  const first = Math.min(profileIds.length - 1, Math.round(offset / step));
+  const go = (x: number) => scroller.current?.scrollTo({ x: Math.max(0, Math.min(maxOffset, x)), animated: true });
+  const page = (direction: 1 | -1) => go(Math.round(offset / step + direction * perPage) * step);
+  spacesStep.current = page;
+  useEffect(() => () => void (spacesStep.current = null), []);
   return (
-    <ScrollView horizontal contentContainerStyle={{ paddingRight: 24, paddingBottom: 24, gap: 18 }}>
-      {profileIds.map((id, i) => (
-        <PageProfileContext.Provider key={id} value={id}>
-          <ThemeScope>
-            <SpaceColumn windowId={windowId} profileId={id} query={query} index={i} />
-          </ThemeScope>
-        </PageProfileContext.Provider>
-      ))}
-    </ScrollView>
+    <View style={{ flex: 1 }} onLayout={(e) => setViewport(e.nativeEvent.layout.width)}>
+      <ScrollView
+        ref={scroller}
+        horizontal
+        showsHorizontalScrollIndicator
+        scrollEventThrottle={16}
+        onScroll={(e) => setOffset(e.nativeEvent.contentOffset.x)}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingRight: 24, paddingBottom: 12, gap: SPACE_GAP }}
+      >
+        {profileIds.map((id, i) => (
+          <PageProfileContext.Provider key={id} value={id}>
+            <ThemeScope>
+              <SpaceColumn windowId={windowId} profileId={id} query={query} index={i} />
+            </ThemeScope>
+          </PageProfileContext.Provider>
+        ))}
+      </ScrollView>
+      {maxOffset > 0 ? (
+        <View style={{ height: 44, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 14, paddingRight: 24 }}>
+          <IconButton icon="chevron.left" size={13} box={30} radius={15} disabled={offset <= 1} onPress={() => page(-1)} tooltip="Previous Spaces (←)" />
+          <View style={{ flexDirection: "row", gap: 6 }}>
+            {profileIds.map((id, i) => {
+              const visible = i >= first && i < first + perPage;
+              return (
+                <Pressable key={id} onPress={() => go(i * step)} tooltip={useBrowser.getState().profiles[id]?.name}>
+                  <View style={{ width: visible ? 16 : 6, height: 6, borderRadius: 3, backgroundColor: theme.textPrimary, opacity: visible ? 0.85 : 0.25 }} />
+                </Pressable>
+              );
+            })}
+          </View>
+          <IconButton icon="chevron.right" size={13} box={30} radius={15} disabled={offset >= maxOffset - 1} onPress={() => page(1)} tooltip="Next Spaces (→)" />
+        </View>
+      ) : null}
+    </View>
   );
 }
 
@@ -164,7 +246,7 @@ const SpaceColumn = memo(function SpaceColumn({ windowId, profileId, query, inde
         transform: [{ translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [18, 0] }) }],
       }}
     >
-      <ColumnTint colors={theme.windowTint} accent={theme.profileColor === "incognito" ? null : theme.accent} />
+      <ThemeTint colors={theme.windowTint} accent={theme.profileColor === "incognito" ? null : theme.accent} />
       <View style={{ height: 44, flexDirection: "row", alignItems: "center", paddingHorizontal: 14, gap: 8 }}>
         {icon ? <Text style={{ fontSize: 15 }}>{icon}</Text> : null}
         <Text numberOfLines={1} style={{ flex: 1, fontSize: 13.5, fontWeight: "700", color: theme.textPrimary }}>
@@ -301,17 +383,3 @@ function Empty({ icon, text }: { icon: string; text: string }) {
   );
 }
 
-const BANDS = 32;
-
-function ColumnTint({ colors, accent }: { colors: readonly [string, string]; accent: string | null }) {
-  return (
-    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: colors[0] }]}>
-      <View style={{ flex: 1 }}>
-        {Array.from({ length: BANDS }, (_, i) => (
-          <View key={i} style={{ flex: 1, backgroundColor: colors[1], opacity: i / (BANDS - 1) }} />
-        ))}
-      </View>
-      {accent ? <View style={[StyleSheet.absoluteFill, { backgroundColor: accent, opacity: 0.08 }]} /> : null}
-    </View>
-  );
-}

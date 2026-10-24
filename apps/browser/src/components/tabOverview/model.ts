@@ -45,8 +45,10 @@ function tileItems(s: BrowserState, tiles: string[]): OverviewItem[] {
 
 export function overviewSections(s: BrowserState, windowId: string): OverviewSection[] {
   const { tiles, pinned, list } = sidebarEntries(s, windowId);
+  const pinnedItems = [...tileItems(s, tiles), ...pinned.flatMap((e) => entryItems(s, e))];
   return [
-    { title: "Pinned", items: [...tileItems(s, tiles), ...pinned.flatMap((e) => entryItems(s, e))] },
+    { title: "Pinned Folders", items: pinnedItems.filter((item) => item.kind === "folder") },
+    { title: "Pinned", items: pinnedItems.filter((item) => item.kind === "tab") },
     { title: "Open", items: list.flatMap((e) => entryItems(s, e)) },
   ].filter((section) => section.items.length);
 }
