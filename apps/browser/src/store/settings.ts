@@ -31,6 +31,7 @@ export type Settings = {
   tabLayout: "sidebar" | "top";
   hideToolbarWhileScrolling: boolean;
   edgeToEdge: boolean;
+  greetingName: string;
   newTabPosition: "top" | "bottom";
   newTabOpens: "page" | "commandBar";
   warnBeforeClosingLastTab: boolean;
@@ -96,8 +97,9 @@ export const DEFAULT_SETTINGS: Settings = {
   tabLayout: "sidebar",
   hideToolbarWhileScrolling: true,
   edgeToEdge: false,
+  greetingName: "",
   newTabPosition: "bottom",
-  newTabOpens: "page",
+  newTabOpens: "commandBar",
   warnBeforeClosingLastTab: true,
   undoReopensClosedTab: false,
   warnBeforeMovingTabsToProfile: true,
@@ -178,7 +180,17 @@ export function choose(settings: Settings, patch: Partial<Settings>): Settings {
   return { ...settings, ...patch, ...(added.length ? { chosen: [...chosen, ...added] } : {}), ...(inferred ? { inferred } : {}) };
 }
 
-export function migrateSavedSettings(saved: (Partial<Settings> & { batterySaver?: unknown }) | undefined): Partial<Settings> | undefined {
+const DEFAULTS_CHANGED: (keyof Settings)[] = ["newTabOpens"];
+
+function withoutUnchosenOldDefaults<T extends Partial<Settings>>(saved: T): T {
+  if (!saved.chosen) return saved;
+  const copy = { ...saved };
+  for (const key of DEFAULTS_CHANGED) if (!saved.chosen.includes(key)) delete copy[key];
+  return copy;
+}
+
+export function migrateSavedSettings(input: (Partial<Settings> & { batterySaver?: unknown }) | undefined): Partial<Settings> | undefined {
+  const saved = input && withoutUnchosenOldDefaults(input);
   if (!saved || !("batterySaver" in saved)) return saved;
   const { batterySaver, ...rest } = saved;
   const explicit = batterySaver === false || (batterySaver === true && !!rest.chosen?.includes("batterySaver") && !rest.inferred?.includes("batterySaver"));

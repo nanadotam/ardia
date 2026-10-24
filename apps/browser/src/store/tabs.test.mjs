@@ -127,6 +127,7 @@ test("closing a pinned tab selects the regular tab the window showed last, not t
 
 test("groups stay contiguous; splits need two panes", () => {
   reset();
+  S().updateSettings({ newTabOpens: "page" });
   const w = S().createWindow({ url: "a.com" });
   const b = S().newTab(w, { url: "b.com" });
   const c = S().newTab(w, { url: "c.com" });

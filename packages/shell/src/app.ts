@@ -138,6 +138,7 @@ type AppModule = {
   stopIntroMusic(fade: number): Promise<void>;
   devRenderIntroMusic(cues: IntroMusicCues, path: string): Promise<number | null>;
   devRunAppleScript(source: string): Promise<{ ok: boolean; result?: unknown; error?: string; number?: number }>;
+  userFullName?(): string;
   devSnapshotWindow(windowId: string, path: string, transparent?: boolean): Promise<boolean>;
   devSetPointer(windowId: string, x: number, y: number, on: boolean): Promise<boolean>;
   devSetMouseButtons(pressed: number): Promise<boolean>;
@@ -251,3 +252,5 @@ export type Click = { x: number; y: number; in?: "window" | "page"; label?: stri
 export type ClickResult = { hit?: string; at?: number; firstResponder?: string; firstResponderOnClick?: string; firstResponderAfter?: string; error?: string };
 export const devClick = (windowId: string, click: Click): Promise<ClickResult> => App.devClick(windowId, click);
 export const devMenuCommand = (command: string, arg: string | null = null) => App.devMenuCommand(command, arg);
+
+export const userFullName = (): string => App.userFullName?.() ?? "";

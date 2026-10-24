@@ -67,24 +67,12 @@ export function openFromNewTabBar(windowId: string, target: NewTabTarget, url: s
   store().newTab(windowId, { url, index: topOfList(store(), windowId) });
 }
 
-const launchTabs = new Set<string>();
-const shownOver = new Set<string>();
-
-export function showOnceOverEmptyCard(windowId: string, tabId: string) {
-  if (!NEW_TAB_BAR_POLICY.showOnceOverNewEmptyWindow || shownOver.has(tabId)) return;
-  shownOver.add(tabId);
-  if (launchTabs.has(tabId) && !NEW_TAB_BAR_POLICY.showOnLaunch) return;
-  const s = store();
-  if (activeTabId(s, windowId) === tabId && !s.windowUi[windowId]?.panel.open) showNewTabBar(windowId);
-}
-
 function dismissBars(except?: string) {
   const s = store();
   for (const [windowId, ui] of Object.entries(s.windowUi)) if (windowId !== except && ui.panel.newTab) s.closePanel(windowId);
 }
 
 export function startNewTabBar() {
-  for (const id of Object.keys(store().tabs)) launchTabs.add(id);
   if (!NEW_TAB_BAR_POLICY.dismissOnWindowDeactivation) return;
   onAppEvent((e) => {
     if (e.type === "resignActive" || e.type === "screenLocked") dismissBars();

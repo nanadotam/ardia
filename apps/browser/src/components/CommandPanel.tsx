@@ -1,6 +1,6 @@
-import { OutsidePressArea, Surface } from "@ardia/shell";
+import { OutsidePressArea, Surface, VisualEffect } from "@ardia/shell";
 import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
-import { AccessibilityInfo, Animated, Easing, View, type LayoutChangeEvent } from "react-native";
+import { AccessibilityInfo, Animated, Easing, StyleSheet, View, type LayoutChangeEvent } from "react-native";
 import { hex, useTheme } from "../lib/theme";
 import { useBrowser } from "../store/browser";
 import { useWindowId, useWindowUi } from "../store/hooks";
@@ -121,22 +121,62 @@ function centredFrame(card: Box) {
   return { left, top, width };
 }
 
+const SPOTLIGHT_RADIUS = 22;
+
 function CentredBar({ windowId, tabId, target, card }: { windowId: string; tabId: string; target: NewTabTarget; card: Box }) {
   const theme = useTheme();
   const onCancel = () => useBrowser.getState().closePanel(windowId);
   const onDone = () => closeNewTabBar(windowId);
+  const [appear] = useState(() => new Animated.Value(reduceMotion ? 1 : 0));
+  useEffect(() => {
+    if (!reduceMotion) Animated.spring(appear, { toValue: 1, speed: 24, bounciness: 7, useNativeDriver: true }).start();
+  }, []);
+  const frame = centredFrame(card);
   return (
-    <Grow
-      from={null}
-      frame={centredFrame(card)}
-      openHeight={PANEL_OPEN_HEIGHT}
-      radius={PANEL_RADIUS}
-      surface={panelSurface(theme, PANEL_RADIUS)}
-    >
-      <OutsidePressArea onOutsidePress={onCancel}>
-        <Omnibox key={`newTab:${target.kind}`} variant="panel" tabId={tabId} opensTab={target} onCancel={onCancel} onDone={onDone} />
-      </OutsidePressArea>
-    </Grow>
+    <>
+      <Animated.View
+        pointerEvents="none"
+        style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0, backgroundColor: theme.dark ? "rgba(0,0,0,0.28)" : "rgba(0,0,0,0.1)", opacity: appear }}
+      />
+      <Animated.View
+        style={{
+          position: "absolute",
+          ...frame,
+          opacity: appear,
+          transform: [
+            { translateY: appear.interpolate({ inputRange: [0, 1], outputRange: [-8, 0] }) },
+            { scale: appear.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1] }) },
+          ],
+        }}
+      >
+        <Surface
+          fill="#00000000"
+          cornerRadius={SPOTLIGHT_RADIUS}
+          shadowColor="#000000"
+          shadowOpacity={theme.dark ? 0.5 : 0.22}
+          shadowRadius={34}
+          shadowOffset={[0, 14]}
+          style={StyleSheet.absoluteFill}
+        />
+        <VisualEffect material="popover" cornerRadius={SPOTLIGHT_RADIUS} style={StyleSheet.absoluteFill} />
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              borderRadius: SPOTLIGHT_RADIUS,
+              borderWidth: 0.5,
+              borderColor: theme.panelBorder,
+              backgroundColor: theme.dark ? "rgba(40,40,42,0.88)" : "rgba(255,255,255,0.9)",
+            },
+          ]}
+        />
+        <View style={{ borderRadius: SPOTLIGHT_RADIUS, overflow: "hidden" }}>
+          <OutsidePressArea onOutsidePress={onCancel}>
+            <Omnibox key={`newTab:${target.kind}`} variant="panel" tabId={tabId} opensTab={target} onCancel={onCancel} onDone={onDone} />
+          </OutsidePressArea>
+        </View>
+      </Animated.View>
+    </>
   );
 }
 

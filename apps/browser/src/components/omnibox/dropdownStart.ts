@@ -1,3 +1,4 @@
+import { hostOf, suggestedForNow } from "../../lib/ntpSuggestions";
 import { recentTabSuggestions, type Suggestion } from "@ardia/core";
 import { useMemo } from "react";
 import { useBrowser } from "../../store/browser";
@@ -41,4 +42,15 @@ export function useOpenTabsStart(enabled: boolean, windowId: string, profileId: 
     const rows = openTabsByUse(tabs, peeks, { profileId, windowId, shared }).map(({ tab: t, lastActiveAt }) => ({ id: t.id, url: t.url, title: tabTitle(t), favicon: t.favicon, lastActiveAt }));
     return recentTabSuggestions(rows, { exclude: active });
   }, [tabs, peeks, active, profileId, shared, windowId]);
+}
+
+const NO_PAGES: never[] = [];
+
+export function usePredictedStart(enabled: boolean, profileId: string, openTabs: Suggestion[]): Suggestion[] {
+  const history = useBrowser((s) => (enabled ? (s.history[profileId] ?? NO_PAGES) : NO_PAGES));
+  return useMemo(() => {
+    if (!enabled) return NO_PAGES;
+    const open = new Set(openTabs.flatMap((t) => (t.kind === "page" ? [hostOf(t.url)] : [])));
+    return suggestedForNow(history, new Date(), open, 4).map((site): Suggestion => ({ kind: "page", url: site.url, title: site.title, favicon: site.favicon, visited: true }));
+  }, [enabled, history, openTabs]);
 }
