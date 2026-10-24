@@ -1,4 +1,5 @@
 import { ContextMenuArea, FadeLabel, Symbol, WindowDragRegion } from "@ardia/shell";
+import { toggleLibrary } from "./library/state";
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Animated, Pressable, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { switchOn } from "../lib/killSwitches";
@@ -79,7 +80,8 @@ export function Sidebar({ width }: { width: number }) {
   const hasDownloads = useBrowser((s) => downloadsIn(s, windowId).length > 0);
   const dots = useProfileDotsShown();
   const footerDownloads = addressBar && hasDownloads;
-  const footer = dots || footerDownloads ? PROFILE_DOTS_HEIGHT : 0;
+  const incognito = useBrowser((s) => !!s.windows[windowId]?.incognito);
+  const footer = dots || footerDownloads || !incognito ? PROFILE_DOTS_HEIGHT : 0;
   const nothingPinned = useBrowser((s) => sidebarEntries(s, windowId, current).tiles.length === 0);
 
   useRevealTabs(windowId, scroll, scrollY, geometry);
@@ -148,8 +150,13 @@ export function Sidebar({ width }: { width: number }) {
           {footer ? (
             <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: footer }}>
               {dots ? <ProfileDots windowId={windowId} /> : null}
-              {footerDownloads ? (
+              {!incognito ? (
                 <View style={{ position: "absolute", left: layout.sidebarInset, bottom: SIDEBAR_FOOTER_DOWNLOADS.bottom }}>
+                  <LibraryButton windowId={windowId} />
+                </View>
+              ) : null}
+              {footerDownloads ? (
+                <View style={{ position: "absolute", left: layout.sidebarInset + (incognito ? 0 : SIDEBAR_FOOTER_DOWNLOADS.size + 2), bottom: SIDEBAR_FOOTER_DOWNLOADS.bottom }}>
                   <DownloadsButton windowId={windowId} />
                 </View>
               ) : null}
@@ -518,6 +525,10 @@ function useRevealTabs(windowId: string, scroll: RefObject<ScrollView | null>, s
       geometry.current.laidOut = undefined;
     };
   }, [windowId]);
+}
+
+function LibraryButton({ windowId }: { windowId: string }) {
+  return <IconButton icon="books.vertical" size={16} box={34} radius={10} tooltip="Library (⌃⌘L)" onPress={() => toggleLibrary(windowId)} />;
 }
 
 function DownloadsButton({ windowId }: { windowId: string }) {

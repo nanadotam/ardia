@@ -8,6 +8,7 @@ import { useSidebarUi } from "../components/sidebar/state";
 import { useBrowser } from "../store/browser";
 import * as actions from "./actions";
 import { runCommand } from "./commands";
+import { closeLibrary, openLibrary } from "../components/library/state";
 import * as favicons from "./favicons";
 import { probeStore } from "./perfProbe";
 import { useLifecycle } from "./tabLifecycle";
@@ -30,7 +31,7 @@ export function startDevHarness() {
   }
 
   const ac = {
-    store: useBrowser, actions, runCommand, webviews, shell, omnibox: omniboxDrivers, pages: pagesDrivers,
+    store: useBrowser, actions, runCommand, webviews, shell, omnibox: omniboxDrivers, pages: pagesDrivers, library: { open: openLibrary, close: closeLibrary },
     pageState: usePages,
     openSettings,
     favicons,

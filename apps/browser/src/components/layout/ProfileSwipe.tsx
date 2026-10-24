@@ -1,4 +1,5 @@
 import { SwipeArea, type SwipeAreaHandle, type SwipeEvent } from "@ardia/ardiacore";
+import { openLibrary } from "../library/state";
 import { WindowBackdrop } from "@ardia/shaders";
 import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import { Animated, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
@@ -28,6 +29,7 @@ export function ProfileSwipeArea({ surface, style, pageWidth }: { surface: "side
       return i < 0 ? [false, false, false] : [i > 0, i < s.profileOrder.length - 1, s.profileOrder.length > 1];
     }),
   );
+  const libraryReachable = useBrowser((s) => !s.windows[windowId]?.incognito);
   const area = useRef<SwipeAreaHandle>(null);
   const pager = pagerFor(windowId);
   const nativePager = usePagerNativeConfig(windowId, pageWidth);
@@ -39,6 +41,7 @@ export function ProfileSwipeArea({ surface, style, pageWidth }: { surface: "side
       received.push({ at: performance.now(), surface, profile: useBrowser.getState().windows[windowId]?.profileId, ...event });
     }
     const e = pageWidth ? { ...event, width: pageWidth } : event;
+    if (e.phase === "swipe" && e.direction === "back" && !previous && surface === "sidebar") return openLibrary(windowId, "spaces");
     if (e.phase === "swipe") return pager.step(e.direction === "back" ? -1 : 1);
     if (e.phase === "wheel") pager.wheel(e);
   };
@@ -50,12 +53,12 @@ export function ProfileSwipeArea({ surface, style, pageWidth }: { surface: "side
     return () => void (devAreas.get(key) === area && devAreas.delete(key));
   }, [windowId, surface]);
 
-  if (!multiple && !nativePager) return null;
+  if (!multiple && !nativePager && !(surface === "sidebar" && libraryReachable)) return null;
   return (
     <SwipeArea
       ref={area}
       style={style}
-      canSwipeBack={previous}
+      canSwipeBack={previous || (surface === "sidebar" && libraryReachable)}
       canSwipeForward={next}
       tracksUnavailableDirections={multiple}
       isPager={multiple}

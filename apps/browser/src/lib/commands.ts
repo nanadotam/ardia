@@ -38,6 +38,7 @@ import { openSplitPane } from "../components/layout/splitActions";
 import { runSidebarCommand } from "../components/sidebar/commands";
 import { numberedTabs } from "../components/sidebar/entries";
 import { toggleTabOverview } from "../components/tabOverview/state";
+import { toggleLibrary } from "../components/library/state";
 import { openExtensionFromMenu } from "../components/extensions/bridge";
 import { toggleCastPicker } from "../components/media/cast";
 import { openManageExtensions, openPinDialog, openWebStore } from "../components/extensions/state";
@@ -150,6 +151,8 @@ export function runCommand({ command, arg, windowId: requested }: CommandEvent) 
   switch (command) {
     case "tabOverview":
       return toggleTabOverview(windowId);
+    case "library":
+      return toggleLibrary(windowId);
     case "newTab":
       if (toggleNewTabBar(windowId)) return;
       return void s.newTab(windowId);

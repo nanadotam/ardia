@@ -528,6 +528,7 @@ enum MainMenu {
       cmd("Go Forward", "forward", rightArrow).hiddenShortcut(),
       .separator(),
       cmd("Show All Tabs", "tabOverview", "\\", [.command, .shift]),
+      cmd("Library", "library", "l", [.command, .control]),
       cmd("Next Tab", "nextTab", "]", [.command, .shift]),
       cmd("Previous Tab", "previousTab", "[", [.command, .shift]),
       cmd("Next Tab", "nextTab", "}").hiddenShortcut(),
