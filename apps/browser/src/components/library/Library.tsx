@@ -12,6 +12,8 @@ import { cleanedTabsFor } from "../../store/organize";
 import type { ClosedTab } from "../../store/types";
 import { downloadsIn } from "../../store/ui";
 import { DownloadCard } from "../pages/DownloadsPage";
+import { DownloadManagerBar } from "../downloads/DownloadManager";
+import { matchesFilter, type DownloadFilter } from "../../lib/downloadManager";
 import { hostLabel, matchesQuery } from "../pages/PageLayout";
 import { Favicon, useHover } from "../primitives";
 import { openThemePanel } from "../theme/ThemePanel";
@@ -250,10 +252,13 @@ function ArchiveSection({ windowId, query }: { windowId: string; query: string }
 
 function DownloadsSection({ windowId, query }: { windowId: string; query: string }) {
   const downloads = useBrowser(useShallow((s) => downloadsIn(s, windowId)));
-  const shown = downloads.filter((d) => matchesQuery(query, d.filename, d.url));
-  if (!shown.length) return <Empty icon="arrow.down.circle" text={query ? "No downloads match" : "Files you download appear here"} />;
+  const [filter, setFilter] = useState<DownloadFilter>("all");
+  const shown = downloads.filter((d) => matchesFilter(d, filter) && matchesQuery(query, d.filename, d.url));
+  if (!downloads.length) return <Empty icon="arrow.down.circle" text="Files you download appear here" />;
   return (
     <ScrollView contentContainerStyle={{ paddingRight: 24, paddingBottom: 30, gap: 8, maxWidth: 760 }}>
+      <DownloadManagerBar downloads={downloads} windowId={windowId} filter={filter} onFilter={setFilter} />
+      {!shown.length && <Empty icon="arrow.down.circle" text="No downloads match" />}
       {shown.map((d) => (
         <DownloadCard key={d.id} d={d} windowId={windowId} />
       ))}

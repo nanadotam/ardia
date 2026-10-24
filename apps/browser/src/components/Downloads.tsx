@@ -10,12 +10,13 @@ import { downloadsIn, downloadVisibleIn } from "../store/ui";
 import { SIDEBAR_FOOTER_DOWNLOADS, useAddressBarInSidebar, useTabLayout } from "./layout/windowLayout";
 import { PROFILE_DOTS_HEIGHT } from "./profiles/ProfileDots";
 import { openInternalPage } from "./pages/urls";
+import { openUrl } from "./bookmarks/actions";
 import { useSidebarWidth } from "./sidebar/tokens";
 import { HoverSlot } from "./HoverSlot";
 import { PANEL, POPOVER_MOTION, PopoverSeparator, usePopoverPresence } from "./layout/controls";
 import { IconButton, useHover } from "./primitives";
 
-function formatBytes(n: number) {
+export function formatBytes(n: number) {
   if (n < 0) return "";
   const units = ["B", "KB", "MB", "GB", "TB"];
   let i = 0;
@@ -26,7 +27,7 @@ function formatBytes(n: number) {
   return `${n < 10 && i > 0 ? n.toFixed(1) : Math.round(n)} ${units[i]}`;
 }
 
-function formatDuration(seconds: number) {
+export function formatDuration(seconds: number) {
   if (seconds < 60) return `${Math.max(1, Math.round(seconds))} sec left`;
   if (seconds < 3600) return `${Math.round(seconds / 60)} min left`;
   return `${Math.round(seconds / 3600)} hr left`;
@@ -68,6 +69,7 @@ export async function downloadMenu(d: Download, windowId: string) {
           { id: "cancel", title: "Cancel" },
         ]
       : [
+          ...(d.state === "failed" || d.state === "cancelled" ? [{ id: "retry", title: "Retry Download" }] : []),
           { id: "open", title: "Open", enabled: exists },
           { id: "reveal", title: "Show in Finder", enabled: exists },
         ];
@@ -84,6 +86,7 @@ export async function downloadMenu(d: Download, windowId: string) {
   if (choice === "pause") void pauseDownload(d.id);
   if (choice === "resume") void resumeDownload(d.id);
   if (choice === "cancel") void cancelDownload(d.id);
+  if (choice === "retry") resumeDownload(d.id).catch(() => openUrl(d.url, windowId, "background"));
   if (choice === "open") void openFile(d.path);
   if (choice === "reveal") void revealFile(d.path);
   if (choice === "copy") copyText(d.url);
