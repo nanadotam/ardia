@@ -1,6 +1,7 @@
 import { ContextMenuArea, FadeLabel, Symbol, WindowDragRegion } from "@ardia/shell";
 import { toggleLibrary } from "./library/state";
 import { toggleThemePanel, useThemePanel } from "./theme/ThemePanel";
+import { canTidyTabs } from "./sidebar/tidyTabs";
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Animated, Pressable, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { switchOn } from "../lib/killSwitches";
@@ -374,6 +375,7 @@ function PageRows({ windowId, profileId, current, rows, lazy, offScreen, tiles, 
   const pending = useBrowser((s) => (growing ? entriesHeight(s, windowId, profileId, all.slice(mountedRows)) : 0));
   const clearable = !offScreen && all.length > 0;
   const tidy = useBrowser((s) => !offScreen && canTidyPins(s, windowId, profileId));
+  const tidyTabsShown = useBrowser((s) => !offScreen && canTidyTabs(s, windowId, profileId));
   const divided = clearable || tidy;
   const pinned = usePinnedSequence(windowId, profileId, offScreen);
   const pinnedSection = pinned.length > 0;
@@ -408,7 +410,7 @@ function PageRows({ windowId, profileId, current, rows, lazy, offScreen, tiles, 
           ))}
           <Tail id="tail:pinnedGroups" section="pinnedGroups" />
         </View>
-        {divided ? <ClearDivider windowId={windowId} profileId={profileId} spaced={pinnedSection} clear={clearable} tidy={tidy} /> : null}
+        {divided ? <ClearDivider windowId={windowId} profileId={profileId} spaced={pinnedSection} clear={clearable} tidy={tidy} tidyTabs={tidyTabsShown} /> : null}
         <View
           ref={(v) => {
             controller?.regions.set("list", v);

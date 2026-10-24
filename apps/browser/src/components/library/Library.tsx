@@ -1,4 +1,7 @@
-import { openFile, Symbol, VisualEffect } from "@ardia/shell";
+import { ContextMenuArea, copyFile, copyText, fileExists, moveToTrash, openInPreview, revealFile, showMenu, Symbol, VisualEffect } from "@ardia/shell";
+import type { Download } from "@ardia/ardiacore";
+import { create } from "zustand";
+import { openUrl } from "../bookmarks/actions";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Easing, findNodeHandle, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useShallow } from "zustand/react/shallow";
@@ -18,6 +21,7 @@ import { matchesFilter, type DownloadFilter } from "../../lib/downloadManager";
 import { hostLabel, matchesQuery } from "../pages/PageLayout";
 import { Favicon, IconButton, useHover } from "../primitives";
 import { openThemePanel } from "../theme/ThemePanel";
+import { libraryReveal, useLibraryPull } from "./pull";
 import { byDay, closeLibrary, LIBRARY_FOCUS, openLibrary, useLibrary, type LibrarySection } from "./state";
 
 const RAIL = 112;
@@ -36,10 +40,16 @@ const VIDEO = /\.(mp4|mov|m4v|webm|mkv|avi)$/i;
 
 export function LibraryHost() {
   const windowId = useWindowId();
-  const section = useLibrary((s) => s.open[windowId]);
+  const opened = useLibrary((s) => s.open[windowId]);
+  const pulling = useLibraryPull((s) => !!s.pulling[windowId]);
+  const section = opened ?? (pulling ? "spaces" : undefined);
   const [shown, setShown] = useState(section);
-  const appear = useRef(new Animated.Value(0)).current;
+  const appear = libraryReveal(windowId);
   useEffect(() => {
+    if (pulling && !opened) {
+      setShown("spaces");
+      return;
+    }
     if (section) {
       setShown(section);
       Animated.timing(appear, { toValue: 1, duration: 280, easing: Easing.bezier(0.2, 0.9, 0.25, 1), useNativeDriver: true }).start();
@@ -48,7 +58,7 @@ export function LibraryHost() {
     Animated.timing(appear, { toValue: 0, duration: 200, easing: Easing.bezier(0.4, 0, 0.7, 0.2), useNativeDriver: true }).start(({ finished }) => {
       if (finished) setShown(undefined);
     });
-  }, [section]);
+  }, [section, pulling]);
   return shown ? <Library windowId={windowId} section={section ?? shown} appear={appear} /> : null;
 }
 
@@ -89,8 +99,8 @@ function Library({ windowId, section, appear }: { windowId: string; section: Lib
         borderColor: theme.panelBorder,
         opacity: appear,
         transform: [
-          { translateY: appear.interpolate({ inputRange: [0, 1], outputRange: [18, 0] }) },
-          { scale: appear.interpolate({ inputRange: [0, 1], outputRange: [0.975, 1] }) },
+          { translateX: appear.interpolate({ inputRange: [0, 1], outputRange: [-220, 0] }) },
+          { scale: appear.interpolate({ inputRange: [0, 1], outputRange: [0.985, 1] }) },
         ],
       }}
     >
@@ -119,9 +129,10 @@ function Library({ windowId, section, appear }: { windowId: string; section: Lib
                 placeholderTextColor={theme.placeholder}
                 selectionColor={theme.selection}
                 enableFocusRing={false}
-                keyDownEvents={!query && section === "spaces" ? [{ key: "Escape" }, { key: "ArrowLeft" }, { key: "ArrowRight" }] : [{ key: "Escape" }]}
+                keyDownEvents={!query && (section === "spaces" || section === "media") ? [{ key: "Escape" }, { key: "ArrowLeft" }, { key: "ArrowRight" }] : [{ key: "Escape" }]}
                 onKeyDown={(e) => {
                   const key = e.nativeEvent.key;
+                  if (section === "media" && mediaKeys.current?.(key)) return;
                   if (key === "ArrowLeft" || key === "ArrowRight") {
                     if (!query && section === "spaces") spacesStep.current?.(key === "ArrowRight" ? 1 : -1);
                     return;
@@ -348,28 +359,135 @@ function DownloadsSection({ windowId, query }: { windowId: string; query: string
   );
 }
 
+const mediaViewer = create<{ path: string | null }>(() => ({ path: null }));
+const mediaKeys: { current: ((key: string) => boolean) | null } = { current: null };
+
+async function mediaMenu(d: Download, windowId: string, view: () => void) {
+  const choice = await showMenu([
+    { id: "view", title: "Preview" },
+    { id: "preview", title: "Open in Preview" },
+    { id: "reveal", title: "Show in Finder" },
+    { separator: true },
+    { id: "copy", title: "Copy" },
+    { id: "copyLink", title: "Copy Download Link" },
+    { separator: true },
+    { id: "trash", title: "Move to Trash" },
+  ]);
+  if (choice === "view") view();
+  if (choice === "preview") void openInPreview(d.path);
+  if (choice === "reveal") void revealFile(d.path);
+  if (choice === "copy") void copyFile(d.path);
+  if (choice === "copyLink") copyText(d.url);
+  if (choice === "trash") void moveToTrash(d.path).then((ok) => ok && useBrowser.getState().removeDownload(d.id));
+}
+
 function MediaSection({ windowId, query }: { windowId: string; query: string }) {
   const theme = useTheme();
   const downloads = useBrowser(useShallow((s) => downloadsIn(s, windowId)));
-  const media = downloads.filter((d) => d.state === "finished" && (IMAGE.test(d.path) || VIDEO.test(d.path)) && matchesQuery(query, d.filename, d.url));
+  const media = downloads.filter((d) => d.state === "finished" && (IMAGE.test(d.path) || VIDEO.test(d.path)) && fileExists(d.path) && matchesQuery(query, d.filename, d.url));
+  const viewing = mediaViewer((v) => v.path);
+  const images = media.filter((d) => IMAGE.test(d.path));
+  const open = (d: Download) => {
+    if (IMAGE.test(d.path)) return mediaViewer.setState({ path: d.path });
+    closeLibrary(windowId);
+    openUrl(`file://${encodeURI(d.path)}`, windowId, "foreground");
+  };
+  const step = (by: number) => {
+    const at = images.findIndex((d) => d.path === mediaViewer.getState().path);
+    if (at < 0 || !images.length) return;
+    mediaViewer.setState({ path: images[(at + by + images.length) % images.length]!.path });
+  };
+  mediaKeys.current = (key) => {
+    if (!mediaViewer.getState().path) return false;
+    if (key === "Escape") mediaViewer.setState({ path: null });
+    else if (key === "ArrowLeft") step(-1);
+    else if (key === "ArrowRight") step(1);
+    else return false;
+    return true;
+  };
+  useEffect(
+    () => () => {
+      mediaKeys.current = null;
+      mediaViewer.setState({ path: null });
+    },
+    [],
+  );
   if (!media.length) return <Empty icon="photo.on.rectangle" text={query ? "No media matches" : "Images and videos you download appear here"} />;
+  const shown = viewing ? media.find((d) => d.path === viewing) : undefined;
   return (
-    <ScrollView contentContainerStyle={{ paddingRight: 24, paddingBottom: 30, flexDirection: "row", flexWrap: "wrap", gap: 14 }}>
-      {media.map((d) => (
-        <Pressable key={d.id} onPress={() => void openFile(d.path)} tooltip={d.filename} style={{ width: 168, gap: 6 }}>
-          <View style={{ width: 168, height: 118, borderRadius: 12, overflow: "hidden", backgroundColor: theme.dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)", alignItems: "center", justifyContent: "center" }}>
-            {IMAGE.test(d.path) ? (
-              <Image source={{ uri: `file://${encodeURI(d.path)}` }} resizeMode="cover" style={StyleSheet.absoluteFill} />
-            ) : (
-              <Symbol name="play.rectangle.fill" size={30} color={theme.textSecondary} style={{ width: 40, height: 34 }} />
-            )}
-          </View>
-          <Text numberOfLines={1} style={{ fontSize: 12, color: theme.textPrimary }}>
-            {d.filename}
-          </Text>
-        </Pressable>
-      ))}
-    </ScrollView>
+    <View style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={{ paddingRight: 24, paddingBottom: 30, flexDirection: "row", flexWrap: "wrap", gap: 14 }}>
+        {media.map((d) => (
+          <MediaTile key={d.id} d={d} onOpen={() => open(d)} onMenu={() => void mediaMenu(d, windowId, () => open(d))} />
+        ))}
+      </ScrollView>
+      {shown ? <MediaViewer d={shown} count={images.length} onClose={() => mediaViewer.setState({ path: null })} onStep={step} windowId={windowId} /> : null}
+    </View>
+  );
+}
+
+function MediaTile({ d, onOpen, onMenu }: { d: Download; onOpen: () => void; onMenu: () => void }) {
+  const theme = useTheme();
+  const { hovered, hoverProps } = useHover();
+  return (
+    <ContextMenuArea onContextMenu={onMenu}>
+      <Pressable {...hoverProps} onPress={onOpen} tooltip={d.filename} style={{ width: 168, gap: 6 }}>
+        <View
+          style={{
+            width: 168,
+            height: 118,
+            borderRadius: 12,
+            overflow: "hidden",
+            backgroundColor: theme.dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)",
+            alignItems: "center",
+            justifyContent: "center",
+            borderWidth: 2,
+            borderColor: hovered ? theme.accent : "transparent",
+          }}
+        >
+          {IMAGE.test(d.path) ? (
+            <Image source={{ uri: `file://${encodeURI(d.path)}` }} resizeMode="cover" style={StyleSheet.absoluteFill} />
+          ) : (
+            <Symbol name="play.rectangle.fill" size={30} color={theme.textSecondary} style={{ width: 40, height: 34 }} />
+          )}
+        </View>
+        <Text numberOfLines={1} style={{ fontSize: 12, color: theme.textPrimary }}>
+          {d.filename}
+        </Text>
+      </Pressable>
+    </ContextMenuArea>
+  );
+}
+
+function MediaViewer({ d, count, onClose, onStep, windowId }: { d: Download; count: number; onClose: () => void; onStep: (by: number) => void; windowId: string }) {
+  const appear = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(appear, { toValue: 1, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, []);
+  const button = (icon: string, tip: string, onPress: () => void) => <IconButton icon={icon} size={14} box={32} radius={16} color="#FFFFFF" tooltip={tip} onPress={onPress} />;
+  return (
+    <Animated.View style={[StyleSheet.absoluteFill, { opacity: appear, marginRight: 24, marginBottom: 12, borderRadius: 14, overflow: "hidden" }]}>
+      <Pressable onPress={onClose} style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.88)" }]} />
+      <Animated.View pointerEvents="none" style={{ position: "absolute", left: 60, right: 60, top: 54, bottom: 30, transform: [{ scale: appear.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] }) }] }}>
+        <Image source={{ uri: `file://${encodeURI(d.path)}` }} resizeMode="contain" style={{ flex: 1 }} />
+      </Animated.View>
+      <View style={{ position: "absolute", left: 12, right: 12, top: 10, flexDirection: "row", alignItems: "center", gap: 4 }}>
+        <Text numberOfLines={1} style={{ flex: 1, marginLeft: 6, fontSize: 13, fontWeight: "600", color: "#FFFFFF" }}>
+          {d.filename}
+        </Text>
+        {button("eye", "Open in Preview", () => void openInPreview(d.path))}
+        {button("folder", "Show in Finder", () => void revealFile(d.path))}
+        {button("doc.on.doc", "Copy", () => void copyFile(d.path))}
+        {button("trash", "Move to Trash", () => void moveToTrash(d.path).then((ok) => ok && (onClose(), useBrowser.getState().removeDownload(d.id))))}
+        {button("xmark", "Close (Esc)", onClose)}
+      </View>
+      {count > 1 ? (
+        <>
+          <View style={{ position: "absolute", left: 12, top: "50%", marginTop: -16 }}>{button("chevron.left", "Previous (←)", () => onStep(-1))}</View>
+          <View style={{ position: "absolute", right: 12, top: "50%", marginTop: -16 }}>{button("chevron.right", "Next (→)", () => onStep(1))}</View>
+        </>
+      ) : null}
+    </Animated.View>
   );
 }
 

@@ -17,6 +17,7 @@ import { LiveItemCard } from "../live/LiveItemCard";
 import { useIsSleeping } from "../../lib/tabLifecycle";
 import { useHover } from "../primitives";
 import { clickTab, tabTitle } from "./actions";
+import { closeTab } from "../../lib/actions";
 import { cardHoverProps, dismissHover, setHoverSpace } from "./hover";
 import { hoverCardOrigin, useHoverCardMotion, useHoverCardPlacement } from "./hoverMotion";
 import { useSidebarUi, type Anchor, type Hover } from "./state";
@@ -114,6 +115,16 @@ function TabCard({ tabId, windowId, anchor }: { tabId: string; windowId: string;
         </Text>
       ) : null}
       <View style={{ flexDirection: "row", gap: 4, marginTop: 8 }}>
+        {tab.pinned && !tab.unloaded ? (
+          <Action
+            icon="xmark"
+            label="Close"
+            onPress={() => {
+              dismissHover();
+              void closeTab(tabId);
+            }}
+          />
+        ) : null}
         <Action icon={tab.pinned ? "pin.slash" : "pin"} label={tab.pinned ? "Unpin" : "Pin"} onPress={() => s().togglePin(tabId)} />
         {tab.url ? (
           <Action
