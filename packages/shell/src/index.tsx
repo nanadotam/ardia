@@ -129,7 +129,7 @@ export type WindowEvent =
   | { type: "close"; id: string }
   | { type: "frame"; id: string; frame: [number, number, number, number] }
   | { type: "leftEdge"; id: string; over: boolean; point: [number, number] }
-  | { type: "pinch"; id: string; direction: "in" | "out" }
+  | { type: "pinch"; id: string; phase: "changed" | "ended" | "cancelled"; total: number }
   | { type: "closeRequest"; id: string };
 
 export type AppEvent =
