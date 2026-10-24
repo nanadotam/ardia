@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Surface } from "@ardia/shell";
 import { StyleSheet, View } from "react-native";
 import { hex, layout, useTheme } from "../lib/theme";
+import { useBrowser } from "../store/browser";
 import { useWindowId } from "../store/hooks";
 import { useCardAnchors } from "./layout/windowLayout";
 import { NewTabExtras } from "./ntp";
@@ -33,6 +34,7 @@ export function NewTabPage({ tabId, toolbar = true }: { tabId: string; toolbar?:
   const theme = useTheme();
   const windowId = useWindowId();
   const onboarding = useOnboarding((s) => s.windowId === windowId);
+  const incognito = useBrowser((s) => !!s.windows[windowId]?.incognito);
   const card = useCardAnchors((s) => s[windowId]);
   const [size, setSizeState] = useState<Size | null>(() => (lastSize && (!card || sameSize(lastSize.card, card)) ? lastSize.size : null));
   const setSize = (next: Size) => setSizeState((prev) => (prev && sameSize(prev, next) ? prev : next));
@@ -67,7 +69,7 @@ export function NewTabPage({ tabId, toolbar = true }: { tabId: string; toolbar?:
           halo={bar}
         />
       )}
-      {!onboarding && <Greeting left={x} top={top - 74} width={width} />}
+      {!onboarding && !incognito && <Greeting left={x} top={top - 74} width={width} />}
       <View onLayout={(e) => setPanelHeight(e.nativeEvent.layout.height)} style={{ position: "absolute", left: x, top, width }}>
         <Surface style={StyleSheet.absoluteFill} fill="#00000000" cornerRadius={20} shadowColor="#000000" shadowOpacity={0.08} shadowRadius={2} shadowOffset={[0, 0.5]} />
         <Surface style={StyleSheet.absoluteFill} fill="#00000000" cornerRadius={20} shadowColor="#000000" shadowOpacity={0.04} shadowRadius={1} shadowOffset={[0, 2]} />

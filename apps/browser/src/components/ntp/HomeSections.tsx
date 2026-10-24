@@ -3,9 +3,10 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Easing, Pressable, Text, View } from "react-native";
 import { GREETING_FONTS } from "../../lib/ntpArtwork";
 import { useNtpBackdrop } from "./Backdrop";
-import { greetingFor, recentSites, suggestedForNow, type SiteSuggestion } from "../../lib/ntpSuggestions";
+import { greetingFor, greetingName, homeHistory, recentSites, suggestedForNow, type SiteSuggestion } from "../../lib/ntpSuggestions";
 import { useTheme } from "../../lib/theme";
 import { useBrowser } from "../../store/browser";
+import { isIncognitoProfile } from "../../store/model";
 import { Favicon, useHover } from "../primitives";
 
 const TILE = 76;
@@ -17,13 +18,14 @@ export function Greeting({ left, top, width }: { left: number; top: number; widt
   const theme = useTheme();
   const custom = useBrowser((s) => s.settings.greetingName);
   const font = useBrowser((s) => GREETING_FONTS[s.settings.greetingFont]);
+  const byName = useBrowser((s) => s.settings.ntpGreetingName);
   const onArt = !!useNtpBackdrop();
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(timer);
   }, []);
-  const name = custom?.trim() || userFullName();
+  const name = greetingName(byName, custom, userFullName);
   const rise = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.timing(rise, { toValue: 1, duration: 420, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
@@ -59,7 +61,7 @@ export function Greeting({ left, top, width }: { left: number; top: number; widt
 export function HomeSections({ tabId, left, top, width }: { tabId: string; left: number; top: number; width: number }) {
   const profileId = useBrowser((s) => s.tabs[tabId]?.profileId ?? "");
   const enabled = useBrowser((s) => s.settings.ntpSuggestions);
-  const history = useBrowser((s) => (enabled ? (s.history[profileId] ?? NO_HISTORY) : NO_HISTORY));
+  const history = useBrowser((s) => homeHistory(s.history[profileId], { enabled, incognito: isIncognitoProfile(profileId) }) as typeof NO_HISTORY);
   const sections = useMemo(() => {
     const now = new Date();
     const suggested = suggestedForNow(history, now);

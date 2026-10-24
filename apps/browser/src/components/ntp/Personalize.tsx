@@ -48,7 +48,7 @@ export function PersonalizeButton({ windowId }: { windowId: string }) {
   );
 }
 
-function SwitchLine({ title, setting }: { title: string; setting: "ntpSuggestions" | "commandBarSuggestions" }) {
+function SwitchLine({ title, setting }: { title: string; setting: "ntpSuggestions" | "commandBarSuggestions" | "ntpGreetingName" }) {
   const theme = useTheme();
   const value = useBrowser((s) => s.settings[setting]);
   return (
@@ -140,6 +140,7 @@ function PersonalizePanel({ windowId, onClose }: { windowId: string; onClose: ()
             <View style={{ gap: 10 }}>
               <SwitchLine title="Suggestions on this page" setting="ntpSuggestions" />
               <SwitchLine title="Suggestions when ⌘T opens" setting="commandBarSuggestions" />
+              <SwitchLine title="Greet me by name" setting="ntpGreetingName" />
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                 <Text style={{ fontSize: 12.5, color: theme.textPrimary }}>Greeting font</Text>
                 <PopUp

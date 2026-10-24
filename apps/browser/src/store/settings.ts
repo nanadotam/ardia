@@ -34,6 +34,7 @@ export type Settings = {
   hideToolbarWhileScrolling: boolean;
   edgeToEdge: boolean;
   greetingName: string;
+  ntpGreetingName: boolean;
   greetingFont: "exposure" | "system";
   ntpSuggestions: boolean;
   commandBarSuggestions: boolean;
@@ -113,6 +114,7 @@ export const DEFAULT_SETTINGS: Settings = {
   hideToolbarWhileScrolling: true,
   edgeToEdge: false,
   greetingName: "",
+  ntpGreetingName: true,
   greetingFont: "exposure",
   ntpSuggestions: true,
   commandBarSuggestions: false,

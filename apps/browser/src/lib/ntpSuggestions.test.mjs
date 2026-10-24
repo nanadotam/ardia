@@ -44,3 +44,26 @@ test("recent sites are distinct hosts, newest first", () => {
   ];
   assert.deepEqual(recentSites(pages).map((s) => s.host), ["a.example", "b.example"]);
 });
+
+test("the greeting uses a name only when asked, and never reads the system name otherwise", async () => {
+  const { greetingName } = await import("./ntpSuggestions.ts");
+  let asked = 0;
+  const system = () => (asked++, "Sam Rivera");
+  assert.equal(greetingName(false, "", system), "");
+  assert.equal(asked, 0);
+  assert.equal(greetingName(true, "  Alex ", system), "Alex");
+  assert.equal(greetingName(true, "", system), "Sam Rivera");
+});
+
+test("a private window's new tab page shows no history, and the switch turns it off everywhere", async () => {
+  const { homeHistory } = await import("./ntpSuggestions.ts");
+  const history = [{ url: "https://a.example/", visits: 9 }];
+  assert.deepEqual(homeHistory(history, { enabled: true, incognito: true }), []);
+  assert.deepEqual(homeHistory(history, { enabled: false, incognito: false }), []);
+  assert.deepEqual(homeHistory(history, { enabled: true, incognito: false }), history);
+});
+
+test("with nothing to show, the history is the same empty list every time, so a store selector stays stable", async () => {
+  const { homeHistory } = await import("./ntpSuggestions.ts");
+  assert.equal(homeHistory(undefined, { enabled: true, incognito: false }), homeHistory([1], { enabled: false, incognito: false }));
+});

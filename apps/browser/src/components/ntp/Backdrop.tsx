@@ -2,9 +2,11 @@ import { useEffect, useRef } from "react";
 import { Animated, Easing, StyleSheet, View } from "react-native";
 import { ntpBackgroundSource } from "../../lib/ntpArtwork";
 import { useBrowser } from "../../store/browser";
+import { useWindowId } from "../../store/hooks";
 
 export function useNtpBackdrop() {
-  return useBrowser((s) => ntpBackgroundSource(s.settings.ntpBackground, s.settings.ntpBackgroundPath));
+  const windowId = useWindowId();
+  return useBrowser((s) => (s.windows[windowId]?.incognito ? null : ntpBackgroundSource(s.settings.ntpBackground, s.settings.ntpBackgroundPath)));
 }
 
 export function NtpBackdrop({ radius }: { radius: number }) {

@@ -74,6 +74,7 @@ function Library({ windowId, section, appear }: { windowId: string; section: Lib
     Animated.timing(sectionFade, { toValue: 1, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
   }, [section]);
   useEffect(() => {
+    focusLibrarySearch.current = () => search.current?.focus();
     search.current?.focus();
     claimFocusTag(windowId, LIBRARY_FOCUS, () => findNodeHandle(search.current));
     return () => {
@@ -370,6 +371,7 @@ function DownloadsSection({ windowId, query }: { windowId: string; query: string
 
 const mediaViewer = create<{ path: string | null }>(() => ({ path: null }));
 const mediaKeys: { current: ((key: string) => boolean) | null } = { current: null };
+const focusLibrarySearch: { current: (() => void) | null } = { current: null };
 
 async function mediaMenu(d: Download, windowId: string, view: () => void) {
   const choice = await showMenu([
@@ -397,7 +399,11 @@ function MediaSection({ windowId, query }: { windowId: string; query: string }) 
   const viewing = mediaViewer((v) => v.path);
   const images = media.filter((d) => IMAGE.test(d.path));
   const open = (d: Download) => {
-    if (IMAGE.test(d.path)) return mediaViewer.setState({ path: d.path });
+    if (IMAGE.test(d.path)) {
+      mediaViewer.setState({ path: d.path });
+      focusLibrarySearch.current?.();
+      return;
+    }
     closeLibrary(windowId);
     openUrl(`file://${encodeURI(d.path)}`, windowId, "foreground");
   };

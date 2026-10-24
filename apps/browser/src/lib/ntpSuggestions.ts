@@ -74,3 +74,13 @@ export function recentSites(pages: readonly VisitedPage[], skip: ReadonlySet<str
     .slice(0, limit)
     .map(toSuggestion);
 }
+
+export function greetingName(byName: boolean, custom: string | undefined, systemName: () => string): string {
+  return byName ? custom?.trim() || systemName() : "";
+}
+
+const NO_HOME_HISTORY: readonly never[] = [];
+
+export function homeHistory<T>(history: readonly T[] | undefined, { enabled, incognito }: { enabled: boolean; incognito: boolean }): readonly T[] {
+  return enabled && !incognito ? (history ?? NO_HOME_HISTORY) : NO_HOME_HISTORY;
+}
