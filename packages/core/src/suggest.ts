@@ -1,5 +1,6 @@
 import { findBang, type BangMatch, type BangTable } from "./bangs.ts";
 import { calculate } from "./calculator.ts";
+import { devDecode, devJump } from "./devTools.ts";
 import { BUILT_IN_ENGINES, searchUrl, type SearchEngine } from "./engines.ts";
 import { matchActions, type ActionCandidate } from "./fuzzy.ts";
 import { fixupUrl, hostOf, urlForDisplay } from "./omnibox.ts";
@@ -482,6 +483,8 @@ export function buildSuggestions(raw: string, source: SuggestionSource, options:
   const search: Suggestion = { kind: "search", query, url: searchUrl(engine, query), engine: engine.name };
   const typedUrl = fixupUrl(query);
   const calc = calculate(query);
+  const jump = devJump(query, options.currentUrl);
+  const decoded = calc ? null : devDecode(raw, now);
   const creates = matchQuickCreate(raw.trimStart());
   const actionRows = query.length >= 4 ? 4 : 2;
   const actionMatches = matchActions(query, actions, actionRows).filter((m) => m.exact || m.score >= 50);
@@ -493,6 +496,7 @@ export function buildSuggestions(raw: string, source: SuggestionSource, options:
   let first: Suggestion;
   if (creates.length && /^\S+\s+\S/.test(query)) first = createRow(creates[0]!);
   else if (actionMatches[0]?.exact) first = actionRow(actionMatches[0].action);
+  else if (jump) first = known(jump.url) ?? { kind: "page", url: jump.url, title: jump.title, favicon: null };
   else if (target && completion) first = known(target.url) ?? { kind: "page", url: target.url, title: "", favicon: target.favicon };
   else if (typedUrl) first = known(typedUrl) ?? { kind: "page", url: typedUrl, title: "", favicon: null };
   else if (websiteFirst && best && best.m >= 40 && (!noInline || typedIsPage(best.c.text, q))) first = pageSuggestion(best.c, best.tabId);
@@ -501,6 +505,7 @@ export function buildSuggestions(raw: string, source: SuggestionSource, options:
   out.push(first);
   out.push(search);
   if (calc) out.push({ kind: "calc", expression: calc.expression, value: calc.display, url: searchUrl(engine, calc.expression) });
+  if (decoded) out.push({ kind: "calc", expression: decoded.summary, value: decoded.value, url: searchUrl(engine, raw.trim()) });
   out.push(...actionMatches.map((m) => actionRow(m.action)));
   out.push(...creates.map(createRow));
   const pageRows = ranked.map((x) => pageSuggestion(x.c, x.tabId));
