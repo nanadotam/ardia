@@ -1,33 +1,13 @@
 import { OutsidePressArea, Surface, Symbol, VisualEffect } from "@ardia/shell";
 import { useEffect, useRef, useState } from "react";
 import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { create } from "zustand";
+import { closeThemePanel, useThemePanel } from "./panelState";
 import { layout, useTheme } from "../../lib/theme";
 import { useBrowser } from "../../store/browser";
 import { useWindowId } from "../../store/hooks";
 import { ThemeSection } from "../settings/ThemeEditor";
 
-type ThemePanelState = { open: Record<string, string> };
-
-export const useThemePanel = create<ThemePanelState>()(() => ({ open: {} }));
-
-export function openThemePanel(windowId: string, profileId?: string) {
-  const target = profileId ?? useBrowser.getState().windows[windowId]?.profileId;
-  if (!target) return;
-  useThemePanel.setState((s) => ({ open: { ...s.open, [windowId]: target } }));
-}
-
-export function closeThemePanel(windowId: string) {
-  useThemePanel.setState((s) => {
-    const { [windowId]: _, ...open } = s.open;
-    return { open };
-  });
-}
-
-export function toggleThemePanel(windowId: string) {
-  if (useThemePanel.getState().open[windowId]) closeThemePanel(windowId);
-  else openThemePanel(windowId);
-}
+export { closeThemePanel, openThemePanel, toggleThemePanel, useThemePanel } from "./panelState";
 
 const WIDTH = 580;
 const RADIUS = 18;
@@ -52,6 +32,10 @@ export function ThemePanelHost() {
 }
 
 function ThemePanel({ windowId, profileId, appear }: { windowId: string; profileId: string; appear: Animated.Value }) {
+  const shownProfile = useBrowser((s) => s.windows[windowId]?.profileId);
+  useEffect(() => {
+    if (shownProfile && shownProfile !== profileId) closeThemePanel(windowId);
+  }, [shownProfile, profileId, windowId]);
   const theme = useTheme();
   const name = useBrowser((s) => s.profiles[profileId]?.name ?? "");
   const sidebarOpen = useBrowser((s) => !!s.windows[windowId]?.sidebarOpen);

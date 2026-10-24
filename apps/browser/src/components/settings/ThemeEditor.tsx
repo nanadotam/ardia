@@ -1,6 +1,6 @@
 import { holdThemedWindowsKeyLook, ThemeSwatch } from "@ardia/shaders";
 import { showMenu, Symbol, type MenuItem } from "@ardia/shell";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View, type GestureResponderEvent } from "react-native";
 import {
   colorHex,
@@ -75,10 +75,8 @@ export function ThemeSection({ profileId, openEditor }: { profileId: string; ope
     holdThemedWindowsKeyLook(true);
     return () => holdThemedWindowsKeyLook(false);
   }, [editing]);
-  const needsCustom = !!openEditor && !!profile && !live.theme;
-  useEffect(() => {
-    if (needsCustom) live.change(startingTheme(PROFILE_COLORS[profile!.color]?.swatch ?? PROFILE_COLORS.plum.swatch), true);
-  }, [needsCustom]);
+  const swatch = PROFILE_COLORS[profile?.color ?? "plum"]?.swatch ?? PROFILE_COLORS.plum.swatch;
+  const draft = useMemo(() => (openEditor ? startingTheme(swatch) : null), [openEditor, swatch]);
   if (!profile) return null;
   const stored = live.theme;
   const custom = stored?.dark ? resolveTheme(stored, themeDark(stored, appDark)) : stored;
@@ -119,7 +117,7 @@ export function ThemeSection({ profileId, openEditor }: { profileId: string; ope
             </Pressable>
           </View>
         </Row>
-        {custom ? <ThemeEditor theme={custom} onChange={live.change} /> : null}
+        {custom || draft ? <ThemeEditor theme={custom ?? draft!} onChange={live.change} /> : null}
       </Group>
     </>
   );
