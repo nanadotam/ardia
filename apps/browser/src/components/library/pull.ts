@@ -1,3 +1,4 @@
+import type { PagerStateEvent } from "@ardia/ardiacore";
 import { Animated, Easing } from "react-native";
 import { create } from "zustand";
 import { librarySection, openLibrary } from "./state";
@@ -10,7 +11,7 @@ export const useLibraryPull = create<{ pulling: Record<string, true>; sources: R
 const reveals = new Map<string, Animated.Value>();
 const pulled = new Map<string, number>();
 export const PULL_OPENS_AT = 0.45;
-export const RUBBER_FULL_PULL = 0.09;
+const PAGER_PULL_STARTS = 0.01;
 
 export function libraryReveal(windowId: string): Animated.Value {
   let v = reveals.get(windowId);
@@ -26,7 +27,7 @@ function setPulling(windowId: string, on: boolean) {
 }
 
 export function attachPagerPull(windowId: string, position: Animated.Value) {
-  const source = position.interpolate({ inputRange: [-RUBBER_FULL_PULL, 0], outputRange: [1, 0], extrapolate: "clamp" });
+  const source = position.interpolate({ inputRange: [-1, 0], outputRange: [1, 0], extrapolate: "clamp" });
   useLibraryPull.setState((s) => ({ sources: { ...s.sources, [windowId]: source } }));
   return () =>
     useLibraryPull.setState((s) => {
@@ -37,29 +38,23 @@ export function attachPagerPull(windowId: string, position: Animated.Value) {
 }
 
 export function notePagerPull(windowId: string, position: number) {
-  if (librarySection(windowId)) return;
-  const progress = Math.min(1, Math.max(0, -position / RUBBER_FULL_PULL));
-  if (!useLibraryPull.getState().pulling[windowId]) {
-    if (progress <= 0.02) return;
-    setPulling(windowId, true);
-  }
-  pulled.set(windowId, Math.max(pulled.get(windowId) ?? 0, progress));
+  if (librarySection(windowId) || useLibraryPull.getState().pulling[windowId]) return;
+  if (position < -PAGER_PULL_STARTS) setPulling(windowId, true);
 }
 
-export function endPagerPull(windowId: string, phase: "began" | "selected" | "settled") {
-  if (!useLibraryPull.getState().pulling[windowId]) return;
-  const reached = pulled.get(windowId) ?? 0;
-  if (phase !== "began" && reached >= PULL_OPENS_AT) {
-    pulled.delete(windowId);
-    libraryReveal(windowId).setValue(reached);
+export function endPagerPull(windowId: string, phase: PagerStateEvent["phase"], returnHome: () => void) {
+  if (phase === "leading") {
+    libraryReveal(windowId).setValue(1);
     openLibrary(windowId, "spaces");
     setPulling(windowId, false);
+    returnHome();
     return;
   }
-  if (phase === "settled") {
-    pulled.delete(windowId);
-    if (!librarySection(windowId)) setPulling(windowId, false);
-  }
+  if (phase === "settled") stopPagerPull(windowId);
+}
+
+export function stopPagerPull(windowId: string) {
+  if (useLibraryPull.getState().pulling[windowId]) setPulling(windowId, false);
 }
 
 export function pullLibrary(windowId: string, progress: number) {

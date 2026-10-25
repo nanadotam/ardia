@@ -54,6 +54,11 @@ class ProfilePager {
     this.commitNative(pagerState(this.windowId) ?? event, event);
   };
 
+  returnHome() {
+    const id = this.current();
+    if (id) this.selectExternal(id, useBrowser.getState().profileOrder);
+  }
+
   private selectExternal(profileId: string, order: string[]) {
     const index = order.indexOf(profileId);
     if (index >= 0) this.pos.setValue(index);
@@ -195,7 +200,7 @@ export function usePagerNativeConfig(windowId: string, width?: number): NativePa
     }),
   );
   return useMemo(
-    () => (selected >= 0 ? { key: windowId, selected, count, width: width || undefined, ack, order } : undefined),
+    () => (selected >= 0 ? { key: windowId, selected, count, width: width || undefined, ack, order, leading: true } : undefined),
     [windowId, selected, count, width, ack, order],
   );
 }
