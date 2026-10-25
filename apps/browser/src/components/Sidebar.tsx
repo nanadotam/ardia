@@ -585,6 +585,7 @@ const MEASURE_OFFSCREEN = { position: "absolute", width: 1000, height: 0, overfl
 
 function IncognitoBadge() {
   const theme = useTheme();
+  if (!useAddressBarInSidebar()) return null;
   return (
     <View style={{ height: 30, marginBottom: 4, paddingHorizontal: 9, flexDirection: "row", alignItems: "center", gap: 7, borderRadius: 8, backgroundColor: theme.dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)" }}>
       <Symbol name={INCOGNITO_ICON} size={13} weight="semibold" color={theme.textPrimary} style={{ width: 18, height: 16 }} />
