@@ -68,7 +68,7 @@ import { closeWebNotification, showWebNotification } from "../lib/webNotificatio
 import { isSmallWindow } from "../store/small";
 import { closeLittleArdiaOnEscape } from "./littleArdia/actions";
 import { PeekOverlay } from "./peek/PeekOverlay";
-import { notePinchScale } from "./tabOverview/state";
+import { notePinchScale } from "./tabOverview/pinchedPages";
 import { closePeekOnEscape, dismissPeek, startPeeks } from "./peek/actions";
 
 const PAGE_DRAG_STRIP = 10;
