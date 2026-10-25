@@ -11,6 +11,7 @@ import {
   onWindowEvent,
   openWindow,
   replyToTerminate,
+  restoreFullScreen,
   setAppearance,
   setMenuStateParts,
   setTrafficLightsCenter,
@@ -86,6 +87,7 @@ export function startNativeSync() {
     const s = store.getState();
     if (e.type === "focus") s.setFocusedWindow(e.id);
     if (e.type === "frame") s.setWindowFrame(e.id, e.frame);
+    if (e.type === "fullScreen" && !quitting) s.setWindowFullScreen(e.id, e.on);
     if (e.type === "close") {
       if (quitting) return;
       open.delete(e.id);
@@ -153,6 +155,7 @@ export function startNativeSync() {
 
   syncWindows(store.getState());
   syncMenu();
+  restoreFullScreenWindows(store.getState());
   store.subscribe((s, prev) => {
     syncWindows(s, prev);
     menuTimer ??= setTimeout(syncMenu, 120);
@@ -179,6 +182,12 @@ export function startNativeSync() {
       void setWindowTitle(id, title);
     }
   });
+}
+
+function restoreFullScreenWindows(s: BrowserState) {
+  const stamp = (id: string) => s.windows[id]?.fullScreen ?? 0;
+  const ids = s.windowOrder.filter((id) => stamp(id) > 0).sort((a, b) => stamp(a) - stamp(b));
+  if (ids.length) void restoreFullScreen(ids, s.ui.focusedWindowId);
 }
 
 const PAGE_COMMANDS = [

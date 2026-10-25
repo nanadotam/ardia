@@ -1,4 +1,5 @@
 import type { BrowserState } from "./browser";
+import { pinSection } from "./model";
 
 export function pageKey(url: string): string {
   const m = /^([a-z][a-z0-9+.-]*:\/\/)([^/?#]*)(.*)$/i.exec(url.trim());
@@ -20,8 +21,9 @@ export function pinnedPages(s: Pick<BrowserState, "tabs" | "groups" | "parkedPin
 
 export function tilePages(s: Pick<BrowserState, "tabs" | "groups" | "parkedPins">, profileId: string): Set<string> {
   const inGroup = new Set(Object.values(s.groups).flatMap((g) => g.tabIds));
-  const tiles = Object.values(s.tabs).filter((t) => t.profileId === profileId && t.pinned && !t.pinnedAsRow && !inGroup.has(t.id));
-  return pageKeys([...tiles, ...(s.parkedPins[profileId]?.tabs ?? []).filter((t) => !t.pinnedAsRow && !t.groupId)]);
+  const tiles = Object.values(s.tabs).filter((t) => t.profileId === profileId && pinSection(t) === "tile" && !inGroup.has(t.id));
+  const parkedTiles = (s.parkedPins[profileId]?.tabs ?? []).filter((t) => pinSection(t) === "tile" && !t.groupId);
+  return pageKeys([...tiles, ...parkedTiles]);
 }
 
 export function openPages(s: Pick<BrowserState, "tabs" | "parkedPins">, profileId: string): Set<string> {
