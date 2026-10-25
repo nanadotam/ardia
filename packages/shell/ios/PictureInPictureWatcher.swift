@@ -12,6 +12,7 @@ final class PictureInPictureWatcher {
   private static let settleSeconds = 0.35
   private static let edgeBand: CGFloat = 6
   private static let cornerBand: CGFloat = 12
+  private static let pinchExpires: TimeInterval = 2
 
   private struct Pinch {
     let window: NSWindow
@@ -22,6 +23,7 @@ final class PictureInPictureWatcher {
     var width: CGFloat
     var step: Int
     var atLimit: Bool
+    var updated = ProcessInfo.processInfo.systemUptime
   }
 
   private struct EdgeDrag {
@@ -91,7 +93,8 @@ final class PictureInPictureWatcher {
   }
 
   func keepAllOnScreen() {
-    guard pinch == nil else { return }
+    if let p = pinch, ProcessInfo.processInfo.systemUptime - p.updated < Self.pinchExpires, p.window.isVisible { return }
+    pinch = nil
     for window in Self.windows { keepOnScreen(window) }
   }
 
@@ -140,6 +143,7 @@ final class PictureInPictureWatcher {
     }
     guard var p = pinch else { return }
     if !event.phase.contains(.began) { resize(&p, by: event.magnification) }
+    p.updated = ProcessInfo.processInfo.systemUptime
     pinch = p
     if event.phase.contains(.ended) || event.phase.contains(.cancelled) {
       pinch = nil
@@ -198,14 +202,18 @@ final class PictureInPictureWatcher {
   }
 
   private func mouse(_ event: NSEvent) -> NSEvent? {
-    if event.type == .leftMouseDragged, var drag = edgeDrag {
-      resize(&drag, to: NSEvent.mouseLocation)
-      edgeDrag = drag
-      return nil
-    }
     if event.type == .leftMouseUp, let drag = edgeDrag {
       edgeDrag = nil
       keepOnScreen(drag.window)
+      return nil
+    }
+    if let drag = edgeDrag, event.type == .leftMouseDown || NSEvent.pressedMouseButtons & 1 == 0 || !drag.window.isVisible {
+      edgeDrag = nil
+      if event.type != .leftMouseDown { keepOnScreen(drag.window) }
+    }
+    if event.type == .leftMouseDragged, var drag = edgeDrag, event.window == nil || event.window === drag.window {
+      resize(&drag, to: NSEvent.mouseLocation)
+      edgeDrag = drag
       return nil
     }
     guard let window = event.window, Self.isPictureInPicture(window),
