@@ -16,6 +16,7 @@ public class AppModule: Module {
         NotificationHub.shared.install()
         AppIcons.restore()
         AppUpdater.shared.start()
+        PictureInPictureWatcher.shared.start()
       }
     }
 
@@ -417,6 +418,30 @@ public class AppModule: Module {
       KeyEquivalents.press(windowId: windowId, press) { promise.resolve($0) }
       #else
       promise.resolve(["error": "DEV builds only"])
+      #endif
+    }.runOnQueue(.main)
+
+    AsyncFunction("devPictureInPicture") { (action: String, values: [Double]?) -> [String: Any] in
+      #if DEBUG
+      let pip = PictureInPictureWatcher.shared
+      switch action {
+      case "describe": return ["windows": pip.devDescribe()]
+      case "pinch": return ["frames": pip.devPinch(values ?? [])]
+      case "place":
+        pip.devPlace(values ?? [])
+        return [:]
+      case "keep":
+        pip.keepAllOnScreen()
+        return [:]
+      case "edge": return ["frame": pip.devEdgeDrag(values ?? [])]
+      case "largest":
+        pip.devToggleLargest()
+        return [:]
+      case "zone": return ["zone": pip.devZone(values ?? [])]
+      default: return [:]
+      }
+      #else
+      return ["error": "DEV builds only"]
       #endif
     }.runOnQueue(.main)
 
