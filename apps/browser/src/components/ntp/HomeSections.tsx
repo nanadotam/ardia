@@ -1,4 +1,4 @@
-import { userFullName } from "@ardia/shell";
+import { Symbol, userFullName } from "@ardia/shell";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Easing, Pressable, Text, View } from "react-native";
 import { GREETING_FONTS } from "../../lib/ntpArtwork";
@@ -13,6 +13,29 @@ const TILE = 76;
 const ICON_BOX = 52;
 const GAP = 14;
 const NO_HISTORY: never[] = [];
+
+export const INCOGNITO_ICON = "eyeglasses";
+
+export function IncognitoHeading({ left, top, width }: { left: number; top: number; width: number }) {
+  const theme = useTheme();
+  const font = useBrowser((s) => GREETING_FONTS[s.settings.greetingFont]);
+  return (
+    <View pointerEvents="none" style={{ position: "absolute", left, top: top - 34, width, alignItems: "center", gap: 6 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+        <Symbol name={INCOGNITO_ICON} size={30} weight="medium" color={theme.textPrimary} style={{ width: 40, height: 36 }} />
+        <Text
+          numberOfLines={1}
+          style={[font ? { fontFamily: font, fontSize: 46, letterSpacing: -0.6 } : { fontSize: 30, fontWeight: "700", letterSpacing: -0.4 }, { color: theme.textPrimary }]}
+        >
+          Incognito
+        </Text>
+      </View>
+      <Text style={{ fontSize: 13, lineHeight: 18, color: theme.textSecondary, textAlign: "center", maxWidth: 460 }}>
+        Pages you visit here aren't saved to your history, and their cookies and site data are cleared when the window closes.
+      </Text>
+    </View>
+  );
+}
 
 export function Greeting({ left, top, width }: { left: number; top: number; width: number }) {
   const theme = useTheme();
