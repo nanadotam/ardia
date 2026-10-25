@@ -10,6 +10,7 @@ import {
   type ExtensionSearchEngine,
   type SearchEngine,
 } from "@ardia/core";
+import type { PageEngine } from "@ardia/ardiacore";
 import type { StateCreator } from "zustand";
 import type { BrowserState } from "./browser";
 
@@ -28,6 +29,7 @@ export type Settings = {
   customSearchEngines: CustomSearchEngine[];
   extensionSearchEngines: ExtensionSearchEngine[];
   searchSuggestions: boolean;
+  showSelectionSearch: boolean;
   commandBarPreference: "website" | "search";
 
   tabLayout: "sidebar" | "top";
@@ -40,7 +42,7 @@ export type Settings = {
   commandBarSuggestions: boolean;
   ntpBackground: string;
   ntpBackgroundPath: string;
-  newTabPosition: "top" | "bottom";
+  newTabPosition: "top" | "bottom" | "nextToCurrent";
   newTabOpens: "page" | "commandBar";
   warnBeforeClosingLastTab: boolean;
   undoReopensClosedTab: boolean;
@@ -51,6 +53,7 @@ export type Settings = {
   cmdClickCreatesTabGroup: boolean;
   optShiftClickOpensInGroup: boolean;
   peekModifier: PeekModifier;
+  splitLinkModifier: SplitLinkModifier;
   autoGroupMeetingTabs: boolean;
   cleanUpInactiveTabsAfterHours: number | null;
   mutedSites: string[];
@@ -60,7 +63,11 @@ export type Settings = {
   sidebarMediaControls: boolean;
   sidebarWidth: number;
   showSidebarButton: boolean;
+  showClearButton: boolean;
   balancedTopApps: boolean;
+  pinnedTabIconRing: boolean;
+  fadeUnloadedTabs: boolean;
+  warnBeforeClosingTabGroup: boolean;
   batterySaverWhen: BatterySaverWhen;
   extensionSidePanelWidth: number;
 
@@ -89,6 +96,9 @@ export type Settings = {
   openLinksInLittleArdia: boolean;
   littleArdiaSize: [number, number];
 
+  pageEngine: PageEngine;
+  websiteEngines: Record<string, PageEngine>;
+
   chosen?: string[];
   inferred?: string[];
 };
@@ -97,6 +107,16 @@ export type PeekModifier = "alt" | "shift" | "off";
 export const PEEK_MODIFIERS: readonly PeekModifier[] = ["alt", "shift", "off"];
 export const peekModifierOf = (settings: Pick<Settings, "peekModifier">): PeekModifier =>
   PEEK_MODIFIERS.includes(settings.peekModifier) ? settings.peekModifier : DEFAULT_SETTINGS.peekModifier;
+
+export type SplitLinkModifier = "altShift" | "alt";
+export const splitLinkModifierOf = (settings: Pick<Settings, "peekModifier" | "splitLinkModifier">): SplitLinkModifier =>
+  settings.splitLinkModifier === "alt" && peekModifierOf(settings) !== "alt" ? "alt" : "altShift";
+
+export function withLinkKeysApart(settings: Settings, patch: Partial<Settings>): Partial<Settings> {
+  if (patch.peekModifier === "alt" && !("splitLinkModifier" in patch) && settings.splitLinkModifier === "alt") return { ...patch, splitLinkModifier: "altShift" };
+  if (patch.splitLinkModifier === "alt" && !("peekModifier" in patch) && peekModifierOf(settings) === "alt") return { ...patch, peekModifier: "shift" };
+  return patch;
+}
 
 export const DEFAULT_PROFILE_ID = "default";
 
@@ -109,6 +129,7 @@ export const DEFAULT_SETTINGS: Settings = {
   customSearchEngines: [],
   extensionSearchEngines: [],
   searchSuggestions: true,
+  showSelectionSearch: true,
   commandBarPreference: "website",
   tabLayout: "sidebar",
   hideToolbarWhileScrolling: true,
@@ -131,6 +152,7 @@ export const DEFAULT_SETTINGS: Settings = {
   cmdClickCreatesTabGroup: true,
   optShiftClickOpensInGroup: true,
   peekModifier: "shift",
+  splitLinkModifier: "altShift",
   autoGroupMeetingTabs: true,
   cleanUpInactiveTabsAfterHours: null,
   mutedSites: [],
@@ -140,7 +162,11 @@ export const DEFAULT_SETTINGS: Settings = {
   sidebarMediaControls: true,
   sidebarWidth: 190,
   showSidebarButton: true,
+  showClearButton: true,
   balancedTopApps: false,
+  pinnedTabIconRing: false,
+  fadeUnloadedTabs: false,
+  warnBeforeClosingTabGroup: true,
   batterySaverWhen: "lowBattery",
   extensionSidePanelWidth: 360,
   showFullUrl: false,
@@ -163,6 +189,8 @@ export const DEFAULT_SETTINGS: Settings = {
   shortcuts: {},
   openLinksInLittleArdia: true,
   littleArdiaSize: [900, 640],
+  pageEngine: "chromium",
+  websiteEngines: {},
 };
 
 const NO_CUSTOM_ENGINES: CustomSearchEngine[] = [];
@@ -248,7 +276,7 @@ const newEngineId = () => `engine-${Date.now().toString(36)}-${(++engineCounter)
 export const createSettingsSlice: StateCreator<BrowserState, [], [], SettingsSlice> = (set, get) => ({
   settings: DEFAULT_SETTINGS,
   updateSettings(patch, { fromSync = false } = {}) {
-    set((s) => ({ settings: fromSync ? { ...s.settings, ...patch } : choose(s.settings, patch) }));
+    set((s) => ({ settings: fromSync ? { ...s.settings, ...patch } : choose(s.settings, withLinkKeysApart(s.settings, patch)) }));
   },
 
   setSearchEngine(id) {

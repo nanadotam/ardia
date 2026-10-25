@@ -4,6 +4,7 @@ export * from "./calculator.ts";
 export * from "./devTools.ts";
 export * from "./cleanUrl.ts";
 export * from "./engines.ts";
+export * from "./extensionRows.ts";
 export * from "./fuzzy.ts";
 export * from "./idn.ts";
 export * from "./omnibox.ts";
