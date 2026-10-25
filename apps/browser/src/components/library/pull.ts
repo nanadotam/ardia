@@ -80,7 +80,5 @@ export function endLibraryPull(windowId: string, open = libraryPulled(windowId) 
     setPulling(windowId, false);
     return;
   }
-  Animated.timing(libraryReveal(windowId), { toValue: 0, duration: 180, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(() => {
-    if (!librarySection(windowId)) setPulling(windowId, false);
-  });
+  Animated.timing(libraryReveal(windowId), { toValue: 0, duration: 180, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(() => setPulling(windowId, false));
 }
